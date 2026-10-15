@@ -17,18 +17,27 @@ optional and uses *your own* API keys, stored only in the device secure store.
 ## Features
 
 - **Market data**
-  - Import OHLCV **CSV** files (comma / semicolon / tab / pipe, header or
-    headerless, multiple date formats, epoch timestamps).
-  - Fetch history from **Alpha Vantage, Twelve Data, Polygon.io, Finnhub** or a
-    custom JSON endpoint using your own key.
+  - **Auto-fetch with no key at all** — type a symbol and Quant RD queries the
+    **Yahoo Finance** and **Binance** free public endpoints. Real historical
+    data for equities, ETFs, indices, FX and crypto. Zero cost, zero sign-up.
+  - **Smart fallback chain** — local cache → free keyless sources → any provider
+    you hold a key for, reporting exactly what it did in plain English
+    ("Using local cache", "Fetched 500 candles from Yahoo Finance (free)").
+  - Import OHLCV **CSV or JSON** (comma / semicolon / tab / pipe, header or
+    headerless, many date formats, epoch timestamps, pasted Yahoo/Binance JSON).
+  - Optional extra providers — **Alpha Vantage, Twelve Data, Polygon.io,
+    Finnhub** or a custom endpoint — using your own key.
   - Bundled **synthetic sample data** so the app is usable offline instantly.
-  - Local, versioned SQLite storage — every dataset is cached for offline use.
+  - Local, versioned SQLite storage — everything fetched or imported is cached
+    for instant offline backtests.
 - **Strategy Lab**
   - Six built-in strategies (Buy & Hold, SMA/EMA crossover, RSI mean-reversion,
     MACD trend, Bollinger breakout).
   - A full **rule builder**: entry/exit conditions over 15 indicators with
     `>`, `<`, `crosses above`, `crosses below` and constant/indicator operands.
   - Stop-loss, take-profit, position sizing and long/short modes.
+  - **Install / import** a strategy from JSON (paste or open a file), **export**
+    any strategy, and toggle each one **active or disabled**.
 - **Backtester** — event-driven, executes signals on the **next bar's open**,
   charges fees and slippage on both sides, supports intra-bar stop-loss /
   take-profit. No look-ahead bias.
@@ -114,10 +123,12 @@ Built for a smooth 60/120 Hz experience:
 
 ## Testing
 
-53 tests across indicators, strategy evaluation, the backtester, metrics, the
-CSV parser, the storage layer, **workspace isolation**, export, the activity log,
-error reporting, and a full UI navigation walk (which also guards against layout
-overflow).
+83 tests across indicators, strategy evaluation, the backtester (including
+**slippage**), metrics, the CSV and **JSON** parsers, the storage layer,
+**workspace isolation**, **smart data fallback**, strategy import/export, export,
+the activity log, error reporting, and a full UI navigation walk (which also
+guards against layout overflow). One test parses a **real captured Yahoo Finance
+response**, so the free data path is verified against the live API shape.
 
 ```bash
 flutter test

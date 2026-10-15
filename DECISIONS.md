@@ -20,3 +20,9 @@
 | 16 | Activity log persisted in the settings table | Survives restarts without a new table; small and simple | Separate log table / external file |
 | 17 | CSV export writes to disk **and** copies to clipboard | Works on every platform, including web which has no filesystem | Disk-only (breaks web) |
 | 18 | Deliver CI artifacts via GitHub Releases, not Actions artifacts | Releases are not subject to the artifact storage quota | Actions artifacts (quota-limited) |
+| 19 | Keyless free sources (Yahoo Finance, Binance) as first-class providers | The brief demands zero-cost auto-fetch with no sign-up; a key requirement is the main reason data "fails" | Key-only providers (blocks first-run users) |
+| 20 | Fallback order: cache → free keyless → keyed | Fastest and cheapest first; offline works out of the box | Provider-first (slower, costs quota, fails offline) |
+| 21 | Every fetched dataset is persisted before returning | Makes the next backtest instant and offline | In-memory only (re-fetch every time) |
+| 22 | Shared `CandleParseReport` with `typedef CsvParseReport` | One report type for CSV and JSON without churning call sites | Duplicate report classes |
+| 23 | Strategy `enabled` flag in a v3 column migration | "Active status" needs durable, queryable state | Storing disabled ids in settings (opaque, no migration path) |
+| 24 | Tolerant strategy import (fills defaults for missing keys) | Hand-written or third-party JSON should not be rejected outright | Strict parsing (rejects most real-world input) |

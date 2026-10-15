@@ -66,3 +66,14 @@
 - [x] 53 tests passing; analyzer clean
 - [x] CI on GitHub Actions: verify + android + windows + web all succeeded
 - [x] Real `.apk`, `.aab` and Windows `.exe` build delivered
+
+## Session 3 — autonomous data & strategy management
+- [x] Keyless free sources (Yahoo Finance, Binance) with `requiresKey`
+- [x] Smart fallback chain: cache → free keyless → keyed provider
+- [x] Plain-English data-status notes in the UI and activity log
+- [x] JSON ingestion (objects/arrays/wrappers/Yahoo/Binance) + CSV/JSON auto-detect
+- [x] Strategy install/import, export, and active/disabled toggle (DB v3)
+- [x] API-keys screen leads with the free sources
+- [x] 83 tests passing (slippage, fallback, JSON, import/export); analyzer clean
+- [x] Live endpoint verified: real AAPL / BTC-USD / EURUSD=X data with no key
+- [x] Real Yahoo payload committed as a regression fixture
