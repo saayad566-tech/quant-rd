@@ -162,6 +162,7 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.research: Icons.travel_explore_rounded,
     NavDestination.knowledge: Icons.menu_book_rounded,
     NavDestination.quantEngine: Icons.functions_rounded,
+    NavDestination.options: Icons.stacked_line_chart_rounded,
     NavDestination.models: Icons.memory_rounded,
     NavDestination.swarm: Icons.hub_rounded,
     NavDestination.activityLog: Icons.receipt_long_rounded,
@@ -176,6 +177,7 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.research: 'Sweep & rank strategies',
     NavDestination.knowledge: 'Book frameworks & screener',
     NavDestination.quantEngine: 'Mechanics & strategy engine',
+    NavDestination.options: 'GEX, Greeks & the smile',
     NavDestination.models: 'Download & manage models',
     NavDestination.swarm: 'Sync across devices',
     NavDestination.activityLog: 'Plain-English history',
@@ -463,11 +465,12 @@ class _ConfigsPanelState extends ConsumerState<_ConfigsPanel> {
   final _bars = TextEditingController();
   final _currency = TextEditingController();
   final _assetBase = TextEditingController();
+  final _edgarUa = TextEditingController();
   bool _initialised = false;
 
   @override
   void dispose() {
-    for (final c in [_capital, _fee, _slip, _rf, _bars, _currency, _assetBase]) {
+    for (final c in [_capital, _fee, _slip, _rf, _bars, _currency, _assetBase, _edgarUa]) {
       c.dispose();
     }
     super.dispose();
@@ -482,6 +485,7 @@ class _ConfigsPanelState extends ConsumerState<_ConfigsPanel> {
     _bars.text = s.defaultConfig.barsPerYear.toString();
     _currency.text = s.currencySymbol;
     _assetBase.text = s.assetPackBaseUrl;
+    _edgarUa.text = s.edgarUserAgent;
     _initialised = true;
   }
 
@@ -496,6 +500,7 @@ class _ConfigsPanelState extends ConsumerState<_ConfigsPanel> {
           ),
           currencySymbol: _currency.text.trim().isEmpty ? s.currencySymbol : _currency.text.trim(),
           assetPackBaseUrl: _assetBase.text.trim(),
+          edgarUserAgent: _edgarUa.text.trim(),
         ));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configuration saved.')));
@@ -580,6 +585,12 @@ class _ConfigsPanelState extends ConsumerState<_ConfigsPanel> {
             ),
             const SizedBox(height: Spacing.md),
             _text(context, 'Assets base URL', _assetBase),
+            const SizedBox(height: Spacing.xs),
+            _text(context, 'SEC EDGAR User-Agent', _edgarUa),
+            Text(
+              'The SEC requires a descriptive User-Agent, for example "Quant RD research (you@example.com)". Without one, EDGAR refuses the request.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10.5),
+            ),
             const SizedBox(height: Spacing.xs),
             const _AssetPackControls(),
             const SizedBox(height: Spacing.lg),

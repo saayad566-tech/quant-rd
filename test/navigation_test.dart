@@ -61,8 +61,14 @@ void main() {
     await settle(tester);
 
     // Walk each navigation destination.
-    for (final label in ['Market Data', 'Strategy Lab', 'Backtest', 'Results', 'Research', 'Book Intelligence', 'Quant Engine', 'Local Models', 'Device Swarm', 'Activity Log', 'Dashboard']) {
-      await tester.tap(find.text(label).first);
+    for (final label in ['Market Data', 'Strategy Lab', 'Backtest', 'Results', 'Research', 'Book Intelligence', 'Quant Engine', 'Options & Gamma', 'Local Models', 'Device Swarm', 'Activity Log', 'Dashboard']) {
+      // The sidebar is a lazy list, so an off-screen destination is not built
+      // until it is scrolled into view.
+      final finder = find.text(label);
+      if (finder.evaluate().isEmpty) {
+        await tester.scrollUntilVisible(finder, 120, scrollable: find.byType(Scrollable).first);
+      }
+      await tester.tap(finder.first);
       await settle(tester);
       expect(tester.takeException(), isNull, reason: 'Navigation to $label threw');
     }

@@ -2,6 +2,8 @@
 /// map, and the on-device book library.
 library;
 
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,9 @@ import '../../domain/knowledge/book_catalogue.dart';
 import '../../domain/knowledge/book_framework.dart';
 import '../../domain/knowledge/framework_screener.dart';
 import '../../domain/knowledge/supply_chain.dart';
+import '../../domain/knowledge/supply_chain_graph.dart';
+import '../../domain/strategy_engine/corpus_parser.dart';
+import '../../domain/strategy_engine/framework_ingestion.dart';
 import '../../domain/providers/knowledge_providers.dart';
 import '../widgets/common.dart';
 
@@ -259,25 +264,70 @@ class _ScreenerTab extends ConsumerWidget {
       padding: const EdgeInsets.all(Spacing.md),
       children: [
         GlassCard(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Screen: ${fw.name}', style: Theme.of(context).textTheme.titleMedium),
-                    Text('Runs against your stored datasets for the active region.', style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Screen: ${fw.name}', style: Theme.of(context).textTheme.titleMedium),
+                        Text('Runs against your stored datasets for the active region.', style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: state.running
+                        ? null
+                        : () => ref.read(screenerControllerProvider.notifier).run(
+                              frameworkId,
+                              withFundamentals: ref.read(useFundamentalsProvider),
+                            ),
+                    icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                    label: Text(state.running ? 'Screening…' : 'Run screen'),
+                  ),
+                ],
               ),
-              FilledButton.icon(
-                onPressed: state.running ? null : () => ref.read(screenerControllerProvider.notifier).run(frameworkId),
-                icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: Text(state.running ? 'Screening…' : 'Run screen'),
+              const SizedBox(height: Spacing.xs),
+              Row(
+                children: [
+                  SizedBox(
+                    height: 32,
+                    child: Checkbox(
+                      value: ref.watch(useFundamentalsProvider),
+                      onChanged: (v) => ref.read(useFundamentalsProvider.notifier).set(v ?? false),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Evaluate fundamental criteria from SEC EDGAR filings (US symbols; needs a User-Agent in Configs)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+        if (state.fundamentalsLoaded > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: Spacing.xs),
+            child: Text('${state.fundamentalsLoaded} symbol(s) scored from filings.', style: TextStyle(color: c.success, fontSize: 11.5)),
+          ),
+        if (state.dataGaps.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: Spacing.xs),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Data gaps (reported, never filled in):', style: Theme.of(context).textTheme.labelSmall),
+                for (final g in state.dataGaps.take(6))
+                  Text('• $g', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10.5, color: c.warning)),
+              ],
+            ),
+          ),
         if (state.error != null) ...[
           const SizedBox(height: Spacing.sm),
           GlassCard(child: Text(state.error!, style: TextStyle(color: c.danger, fontSize: 12))),
@@ -372,6 +422,8 @@ class _ThemesTab extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
+        const SizedBox(height: Spacing.sm),
+        const _SupplyGraphPanel(),
         const SizedBox(height: Spacing.sm),
         for (final theme in kSupplyChainThemes)
           GlassCard(
@@ -492,6 +544,8 @@ class _LibraryTabState extends ConsumerState<_LibraryTab> {
             ],
           ),
         ),
+        const SizedBox(height: Spacing.md),
+        const _CorpusPanel(),
         const SizedBox(height: Spacing.md),
         GlassCard(
           child: Column(
@@ -634,6 +688,217 @@ class _OwnCopyFormState extends State<_OwnCopyForm> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// The three-tier supply-chain graph: choke-points and shock propagation.
+class _SupplyGraphPanel extends StatefulWidget {
+  const _SupplyGraphPanel();
+
+  @override
+  State<_SupplyGraphPanel> createState() => _SupplyGraphPanelState();
+}
+
+class _SupplyGraphPanelState extends State<_SupplyGraphPanel> {
+  late final SupplyChainGraph _graph = buildDefaultSupplyChain();
+  String? _shocked;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final choke = _graph.chokePoints(limit: 6);
+    final shock = _shocked == null ? null : _graph.propagate(_shocked!);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(
+            title: 'Three-tier dependency graph',
+            subtitle: '${_graph.nodes.length} nodes · ${_graph.edges.length} dependency edges',
+          ),
+          const SizedBox(height: Spacing.sm),
+          Row(
+            children: [
+              for (final t in SupplyTier.values)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: Spacing.xs),
+                    child: MetricTile(
+                      label: t.label.split(' — ').first,
+                      value: '${_graph.nodes.where((n) => n.tier == t).length}',
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text('HIGHEST CHOKE-POINT SCORES', style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: Spacing.xxs),
+          for (final n in choke)
+            Text(
+              '${n.name} · ${n.tier.label.split(' — ').first} · score ${n.chokePointScore.toStringAsFixed(2)} — ${n.note}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+            ),
+          const SizedBox(height: Spacing.sm),
+          Text('SHOCK PROPAGATION', style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: Spacing.xxs),
+          DropdownButtonFormField<String>(
+            initialValue: _shocked,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Shock originating at', isDense: true),
+            items: _graph.nodes
+                .map((n) => DropdownMenuItem(value: n.id, child: Text(n.name, overflow: TextOverflow.ellipsis)))
+                .toList(),
+            onChanged: (v) => setState(() => _shocked = v),
+          ),
+          if (shock != null) ...[
+            const SizedBox(height: Spacing.xs),
+            Text(shock.summary, style: Theme.of(context).textTheme.bodySmall),
+            if (shock.criticalPath().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Critical path: ${shock.criticalPath().join(' → ')}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11, color: c.accent),
+                ),
+              ),
+            for (final e in shock.ranked.take(6))
+              Text(
+                '${_graph.node(e.key)?.name} absorbs ${(e.value * 100).toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Ingests a public-domain or user-supplied text into candidate rules.
+class _CorpusPanel extends StatefulWidget {
+  const _CorpusPanel();
+
+  @override
+  State<_CorpusPanel> createState() => _CorpusPanelState();
+}
+
+class _CorpusPanelState extends State<_CorpusPanel> {
+  final _title = TextEditingController();
+  final _author = TextEditingController();
+  final _year = TextEditingController();
+  final _text = TextEditingController();
+  CorpusExtraction? _extraction;
+  String? _registered;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _author.dispose();
+    _year.dispose();
+    _text.dispose();
+    super.dispose();
+  }
+
+  void _extract() {
+    if (_title.text.trim().isEmpty || _author.text.trim().isEmpty) return;
+    setState(() {
+      _registered = null;
+      _extraction = CorpusExtractor.extract(
+        _text.text,
+        title: _title.text.trim(),
+        author: _author.text.trim(),
+        year: int.tryParse(_year.text.trim()),
+      );
+    });
+  }
+
+  void _register() {
+    final ex = _extraction;
+    if (ex == null) return;
+    final spec = ex.toFramework(
+      id: 'corpus.${_title.text.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}',
+      name: '${_title.text.trim()} rules',
+    );
+    if (spec == null) {
+      setState(() => _registered = 'Nothing mapped to the schema, so nothing was registered.');
+      return;
+    }
+    final result = FrameworkIngestor.ingestDocument(_jsonEncode(spec));
+    setState(() => _registered = result.failed.isEmpty
+        ? 'Registered ${result.registered.length} framework(s) from the text.'
+        : 'Registration failed: ${result.failed.join('; ')}');
+  }
+
+  String _jsonEncode(FrameworkSpec spec) {
+    // Reuse the ingestion pipeline's own schema by encoding the spec.
+    return const JsonEncoder().convert(spec.toJson());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final ex = _extraction;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(
+            title: 'Ingest a text corpus',
+            subtitle: 'Public-domain or your own text — rules are extracted and validated against the schema',
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'Paste text you are entitled to use: public-domain works, or a document you own. The extractor maps sentences '
+            'onto executable rules and rejects anything ambiguous, rather than guessing at mathematics.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: Spacing.sm),
+          Row(
+            children: [
+              Expanded(child: TextField(controller: _title, decoration: const InputDecoration(labelText: 'Source title', isDense: true))),
+              const SizedBox(width: Spacing.xs),
+              Expanded(child: TextField(controller: _author, decoration: const InputDecoration(labelText: 'Author', isDense: true))),
+              const SizedBox(width: Spacing.xs),
+              SizedBox(width: 90, child: TextField(controller: _year, decoration: const InputDecoration(labelText: 'Year', isDense: true))),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          TextField(
+            controller: _text,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: 'When the relative strength index is below 30 the stock is oversold. '
+                  'Buy when the 50 day moving average crosses above the 200 day moving average.',
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Row(
+            children: [
+              OutlinedButton.icon(onPressed: _extract, icon: const Icon(Icons.search_rounded, size: 16), label: const Text('Extract rules')),
+              const SizedBox(width: Spacing.sm),
+              FilledButton(onPressed: ex == null ? null : _register, child: const Text('Register accepted')),
+            ],
+          ),
+          if (ex != null) ...[
+            const SizedBox(height: Spacing.sm),
+            Text(ex.summary, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: Spacing.xxs),
+            for (final d in ex.accepted.take(6))
+              Text('PASS  ${d.rule!.left.indicator}(${d.rule!.left.period}) ${d.rule!.op.id} '
+                  '${d.rule!.value ?? d.rule!.right?.indicator} · conf ${(d.confidence * 100).toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11, color: c.success)),
+            for (final d in ex.rejected.take(6))
+              Text('REJECT  ${d.rejection}', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11, color: c.danger)),
+          ],
+          if (_registered != null) ...[
+            const SizedBox(height: Spacing.xs),
+            Text(_registered!, style: TextStyle(color: c.success, fontSize: 11.5)),
+          ],
+        ],
+      ),
     );
   }
 }
