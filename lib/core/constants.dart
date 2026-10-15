@@ -31,12 +31,19 @@ class AppLimits {
 
   /// Trading days per year used for annualisation defaults.
   static const int defaultBarsPerYear = 252;
+
+  /// Hard cap on candles held in a live rolling buffer. Historical arrays are
+  /// sliced to this bound so a long-running feed cannot leak memory.
+  static const int rollingCandleCap = 5000;
+
+  /// Maximum number of devices tracked in a local swarm cluster.
+  static const int maxSwarmDevices = 15;
 }
 
 class StorageKeys {
   const StorageKeys._();
   static const String databaseName = 'quant_rd.db';
-  static const String databaseVersion = '3';
+  static const String databaseVersion = '4';
   static const String settingsBox = 'quant_rd_settings';
 
   /// The workspace created on first run; also the fallback for legacy rows.

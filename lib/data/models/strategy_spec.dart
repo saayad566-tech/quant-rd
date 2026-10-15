@@ -6,6 +6,10 @@
 /// users can save, share and reload strategies.
 library;
 
+import 'dart:convert';
+
+import '../../domain/research/validation.dart';
+
 /// Technical indicators available to the rule builder.
 enum IndicatorType {
   close('Close price', 0),
@@ -200,6 +204,10 @@ class StrategySpec {
 
   /// Whether the strategy is active (enabled) in this workspace.
   final bool enabled;
+
+  /// The most recent result of the mandatory backtest validation gate.
+  /// Null means the strategy has never been validated.
+  final StrategyValidation? validation;
   final DateTime updatedAt;
 
   const StrategySpec({
@@ -216,6 +224,7 @@ class StrategySpec {
     this.sizingValue = 100,
     this.allowShort = false,
     this.enabled = true,
+    this.validation,
     required this.updatedAt,
   });
 
@@ -231,6 +240,8 @@ class StrategySpec {
     double? sizingValue,
     bool? allowShort,
     bool? enabled,
+    StrategyValidation? validation,
+    bool clearValidation = false,
     DateTime? updatedAt,
   }) =>
       StrategySpec(
@@ -247,6 +258,7 @@ class StrategySpec {
         sizingValue: sizingValue ?? this.sizingValue,
         allowShort: allowShort ?? this.allowShort,
         enabled: enabled ?? this.enabled,
+        validation: clearValidation ? null : (validation ?? this.validation),
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
@@ -275,6 +287,7 @@ class StrategySpec {
         'sizing_value': sizingValue,
         'allow_short': allowShort ? 1 : 0,
         'enabled': enabled ? 1 : 0,
+        'validation': validation == null ? null : jsonEncode(validation!.toMap()),
         'updated_at': updatedAt.millisecondsSinceEpoch,
       };
 
@@ -292,6 +305,18 @@ class StrategySpec {
         sizingValue: (m['sizing_value'] as num?)?.toDouble() ?? 100,
         allowShort: ((m['allow_short'] as num?)?.toInt() ?? 0) == 1,
         enabled: ((m['enabled'] as num?)?.toInt() ?? 1) == 1,
+        validation: _parseValidation(m['validation']),
         updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updated_at'] as num?)?.toInt() ?? 0),
       );
+
+  static StrategyValidation? _parseValidation(Object? raw) {
+    if (raw == null) return null;
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is Map) return StrategyValidation.fromMap(decoded.cast<String, dynamic>());
+    } catch (_) {
+      // A malformed stored validation is treated as "not validated".
+    }
+    return null;
+  }
 }

@@ -1,6 +1,7 @@
 /// SQLite-backed implementation for Android, Windows and other dart:io targets.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -11,6 +12,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart' as ffi;
 import '../../core/constants.dart';
 import '../models/backtest_result.dart';
 import '../models/candle.dart';
+import '../../domain/research/validation.dart';
 import '../models/dataset.dart';
 import '../models/strategy_spec.dart';
 import '../models/workspace.dart';
@@ -92,6 +94,7 @@ class IoAppDatabase implements AppDatabase {
         sizing_value REAL NOT NULL,
         allow_short INTEGER NOT NULL,
         enabled INTEGER NOT NULL DEFAULT 1,
+        validation_json TEXT,
         updated_at INTEGER NOT NULL
       )
     ''');
@@ -140,6 +143,10 @@ class IoAppDatabase implements AppDatabase {
     if (oldVersion < 3) {
       // v3: strategies gain an enabled/active flag.
       await _addColumnIfMissing(db, 'strategies', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
+    }
+    if (oldVersion < 4) {
+      // v4: strategies record the result of the mandatory validation gate.
+      await _addColumnIfMissing(db, 'strategies', 'validation_json', 'TEXT');
     }
   }
 
@@ -305,8 +312,18 @@ class IoAppDatabase implements AppDatabase {
         sizingValue: (r['sizing_value'] as num).toDouble(),
         allowShort: (r['allow_short'] as num).toInt() == 1,
         enabled: ((r['enabled'] as num?)?.toInt() ?? 1) == 1,
+        validation: _validationFromRow(r['validation_json']),
         updatedAt: DateTime.fromMillisecondsSinceEpoch((r['updated_at'] as num).toInt()),
       );
+
+  static StrategyValidation? _validationFromRow(Object? raw) {
+    if (raw == null) return null;
+    try {
+      return StrategyValidation.fromMap(jsonDecode(raw as String) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Future<void> saveStrategy(StrategySpec strategy) async {
@@ -326,6 +343,7 @@ class IoAppDatabase implements AppDatabase {
         'sizing_value': strategy.sizingValue,
         'allow_short': strategy.allowShort ? 1 : 0,
         'enabled': strategy.enabled ? 1 : 0,
+        'validation_json': strategy.validation == null ? null : jsonEncode(strategy.validation!.toMap()),
         'updated_at': strategy.updatedAt.millisecondsSinceEpoch,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,

@@ -17,12 +17,17 @@ class AppSettings {
   /// Bundled sample data is offered when true (fully offline).
   final bool includeSampleData;
 
+  /// Base URL of the model repository used by the local model hub
+  /// (expects `<base>/manifest.json`). Empty disables remote models.
+  final String modelBaseUrl;
+
   const AppSettings({
     this.themeMode = ThemeMode.dark,
     this.defaultConfig = const BacktestConfig(),
     this.currencySymbol = '\u20b9',
     this.assetPackBaseUrl = '',
     this.includeSampleData = true,
+    this.modelBaseUrl = '',
   });
 
   AppSettings copyWith({
@@ -31,6 +36,7 @@ class AppSettings {
     String? currencySymbol,
     String? assetPackBaseUrl,
     bool? includeSampleData,
+    String? modelBaseUrl,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -38,6 +44,7 @@ class AppSettings {
         currencySymbol: currencySymbol ?? this.currencySymbol,
         assetPackBaseUrl: assetPackBaseUrl ?? this.assetPackBaseUrl,
         includeSampleData: includeSampleData ?? this.includeSampleData,
+        modelBaseUrl: modelBaseUrl ?? this.modelBaseUrl,
       );
 
   Map<String, dynamic> toMap() => {
@@ -46,6 +53,7 @@ class AppSettings {
         'currency_symbol': currencySymbol,
         'asset_pack_base_url': assetPackBaseUrl,
         'include_sample_data': includeSampleData ? 1 : 0,
+        'model_base_url': modelBaseUrl,
       };
 
   factory AppSettings.fromMap(Map<String, dynamic> m) => AppSettings(
@@ -56,5 +64,6 @@ class AppSettings {
         currencySymbol: (m['currency_symbol'] as String?) ?? '\u20b9',
         assetPackBaseUrl: (m['asset_pack_base_url'] as String?) ?? '',
         includeSampleData: ((m['include_sample_data'] as num?)?.toInt() ?? 1) == 1,
+        modelBaseUrl: (m['model_base_url'] as String?) ?? '',
       );
 }
