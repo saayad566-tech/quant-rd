@@ -14,3 +14,9 @@
 | 10 | Timezone-less CSV timestamps treated as UTC | Deterministic results regardless of device timezone | Local-time interpretation (non-reproducible) |
 | 11 | Synthetic sample data labelled as such | App usable offline instantly; honest labelling | No sample (empty first-run experience) |
 | 12 | No telemetry, no backend | Privacy + offline-first + zero cost | Cloud analytics (privacy + cost) |
+| 13 | Workspaces (project isolation) as a first-class concept | The protocol requires independent projects to be strictly separated; research tools need it | Single global pool (leaks unrelated research) |
+| 14 | Built-ins are global templates (`workspace_id = ''`) | Available everywhere without duplication; deletion-protected | Per-workspace copies (duplication, drift) |
+| 15 | Backdrop blur is opt-in, not default | A blur re-samples the backdrop every frame — the main cause of scroll jank | Blur on every card (pretty, slow) |
+| 16 | Activity log persisted in the settings table | Survives restarts without a new table; small and simple | Separate log table / external file |
+| 17 | CSV export writes to disk **and** copies to clipboard | Works on every platform, including web which has no filesystem | Disk-only (breaks web) |
+| 18 | Deliver CI artifacts via GitHub Releases, not Actions artifacts | Releases are not subject to the artifact storage quota | Actions artifacts (quota-limited) |

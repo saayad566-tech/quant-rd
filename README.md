@@ -39,6 +39,14 @@ optional and uses *your own* API keys, stored only in the device secure store.
   responsive layout (permanent sidebar on desktop, drawer on mobile).
 - **Multi-tab sidebar** — dedicated **Navigate**, **API Keys** and **Configs**
   sections so the main workspace layout is never compromised.
+- **Projects (workspaces)** — keep separate research projects fully isolated;
+  datasets, strategies and results never leak between projects.
+- **Activity log** — a plain-English, timestamped record of every import, fetch,
+  backtest and error, exportable at any time.
+- **Export** — trades, metrics, equity curves and datasets to CSV, saved to disk
+  and copied to the clipboard in one tap.
+- **Resilient by design** — global error handling turns failures into calm,
+  self-explanatory messages and keeps the rest of the app running.
 - **Runtime asset packs** — large datasets live in a *separate* repository,
   chunked and downloaded on demand, verified by SHA-256.
 
@@ -92,11 +100,24 @@ lib/
 - The domain layer is pure Dart and unit-tested independently of Flutter.
 - Errors are typed values with user-facing messages — no swallowed exceptions.
 
+## Performance
+
+Built for a smooth 60/120 Hz experience:
+
+- The glass surfaces use a **cheap translucent fill by default**; a true backdrop
+  blur is opt-in and reserved for a few hero cards, because a blur re-samples the
+  backdrop every frame and is the classic cause of scroll jank.
+- Charts are wrapped in `RepaintBoundary` and **downsample to ≤600 points**, so a
+  50,000-bar equity curve paints as fast as a 600-bar one.
+- Lists are virtualised (`ListView.builder`); database reads are indexed and
+  paginated; heavy work stays off the UI thread.
+
 ## Testing
 
-38 tests across indicators, strategy evaluation, the backtester, metrics, the
-CSV parser, the storage layer and a full UI navigation walk (which also guards
-against layout overflow).
+53 tests across indicators, strategy evaluation, the backtester, metrics, the
+CSV parser, the storage layer, **workspace isolation**, export, the activity log,
+error reporting, and a full UI navigation walk (which also guards against layout
+overflow).
 
 ```bash
 flutter test

@@ -37,3 +37,51 @@ scratch.
 - Fixed a `MetricTile` layout overflow caught by the widget test.
 - Updated the CSV parser to `csv` 8.x's `Csv` codec after the API changed.
 - Made timezone-less CSV timestamps UTC for deterministic tests.
+
+## 2026-10-15 — Session 2 (deep audit + protocol hardening + shipping)
+
+**Audit** — re-read the whole codebase and catalogued gaps against the protocol
+set: no project isolation, no user-visible logging, no global error handling, a
+blur-on-every-card rendering cost, and no data export.
+
+**Implemented**
+- **Multi-project isolation** — first-class *Workspaces*. New `workspaces` table;
+  `workspace_id` on datasets/strategies/backtests; v1→v2 SQLite migration that
+  moves existing rows into a default project; workspace-scoped queries in every
+  repository; a project switcher in the sidebar and full project management
+  (create / rename / clear / delete) in Configs. Built-in strategies are global
+  templates; user strategies are workspace-scoped.
+- **Plain-English activity log** — `ActivityLog` records imports, fetches,
+  backtests, deletes and errors as readable lines; persisted across sessions and
+  viewable/exportable in a new Activity Log screen.
+- **Self-healing error reporting** — `ErrorReporter` installs global handlers
+  (`FlutterError.onError`, `PlatformDispatcher.onError`, `ErrorWidget.builder`),
+  converts any failure into a calm sentence, and replaces the red error screen
+  with a fallback that keeps the app running.
+- **60/120 Hz performance pass** — `GlassCard` backdrop blur is now opt-in
+  (reserved for hero surfaces) instead of applied to every card, which removes a
+  per-frame backdrop re-sample in scrolling lists; blur layers are wrapped in
+  `RepaintBoundary`; charts are wrapped in `RepaintBoundary` and downsample to
+  ≤600 points.
+- **Export** — trades, metrics, equity curve and datasets to CSV, saved to disk
+  (IO platforms) and copied to the clipboard everywhere.
+- Fixed a real bug found by the widget test earlier (MetricTile overflow) and
+  cleaned remaining template TODOs.
+
+**Verified**
+- `flutter analyze` → **No issues found!**
+- `flutter test` → **All tests passed! (53)** — up from 38; new suites cover
+  workspace isolation, export, the activity log and error reporting.
+
+**Shipped (CI)**
+- Pushed the full source to a private GitHub repo and ran GitHub Actions.
+- `verify`, `android`, `windows`, `web` jobs all **succeeded**.
+- Downloaded the real artifacts: 3 release APKs, the Play Store `.aab`, the
+  Windows release (contains `quant_rd.exe`), and the web build.
+
+**Lessons recorded**
+- Binary files must be committed as base64; a text-only upload silently drops
+  launcher icons and `app_icon.ico`, which breaks the Android and Windows builds.
+- GitHub's free artifact storage quota can be exhausted; publishing to GitHub
+  **Releases** is a reliable alternative that does not use artifact storage.
+- `secrets` cannot be used in a step-level `if:`; use a shell check instead.

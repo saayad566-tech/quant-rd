@@ -54,3 +54,15 @@
 - [x] indicators (9) · strategy engine (4) · backtester (7) · metrics (3)
 - [x] csv parser (7) · repositories (4) · widget smoke (1) · navigation (1)
 - [x] 38 passing, 0 failing
+
+## Session 2 — audit, protocols & shipping
+- [x] Deep audit of the whole codebase against the protocol set
+- [x] Multi-project isolation (Workspaces) + v1→v2 migration
+- [x] Workspace switcher + project management UI
+- [x] Plain-English activity log + Activity Log screen
+- [x] Self-healing error reporting (global handlers + fallback UI)
+- [x] 60/120 Hz performance pass (blur opt-in, RepaintBoundary, chart downsampling)
+- [x] CSV export (trades, metrics, equity, datasets)
+- [x] 53 tests passing; analyzer clean
+- [x] CI on GitHub Actions: verify + android + windows + web all succeeded
+- [x] Real `.apk`, `.aab` and Windows `.exe` build delivered
