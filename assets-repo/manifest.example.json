@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-10-15T00:00:00Z",
+  "packs": [
+    {
+      "id": "nifty50-1d",
+      "name": "NIFTY 50 daily",
+      "description": "Daily OHLCV history for the NIFTY 50 index. Replace with your licensed source.",
+      "version": "1.0.0",
+      "category": "data",
+      "size_bytes": 0,
+      "sha256": "",
+      "chunk_urls": [
+        "https://raw.githubusercontent.com/ORG/quant-rd-assets/main/packs/nifty50-1d/nifty50-1d.part-000"
+      ],
+      "file_name": "nifty50_1d.csv"
+    }
+  ]
+}
