@@ -61,7 +61,7 @@ void main() {
     await settle(tester);
 
     // Walk each navigation destination.
-    for (final label in ['Market Data', 'Strategy Lab', 'Backtest', 'Results', 'Dashboard']) {
+    for (final label in ['Market Data', 'Strategy Lab', 'Backtest', 'Results', 'Research', 'Local Models', 'Device Swarm', 'Activity Log', 'Dashboard']) {
       await tester.tap(find.text(label).first);
       await settle(tester);
       expect(tester.takeException(), isNull, reason: 'Navigation to $label threw');
