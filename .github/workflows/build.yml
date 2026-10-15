@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Only one build per branch at a time, so concurrent runs cannot race and
+# overwrite each other's release assets.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.47.7'
 
@@ -54,6 +60,7 @@ jobs:
           files: |
             build/app/outputs/flutter-apk/*.apk
             build/app/outputs/bundle/release/*.aab
+          overwrite_files: true
           make_latest: false
 
   windows:
@@ -80,6 +87,7 @@ jobs:
           name: Windows (latest build)
           body: Automated Windows build from the latest main. Unzip and run quant_rd.exe.
           files: quant-rd-windows.zip
+          overwrite_files: true
           make_latest: false
 
   web:
@@ -105,4 +113,5 @@ jobs:
           name: Web (latest build)
           body: Automated web build from the latest main. Unzip and serve the folder.
           files: quant-rd-web.zip
+          overwrite_files: true
           make_latest: false
