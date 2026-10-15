@@ -83,7 +83,7 @@ optional and uses *your own* API keys, stored only in the device secure store.
 ```bash
 flutter pub get
 flutter analyze          # must be clean
-flutter test             # 38 tests
+flutter test             # 236 tests
 flutter run              # desktop / mobile
 ```
 
@@ -140,7 +140,7 @@ Built for a smooth 60/120 Hz experience:
 
 ## Testing
 
-110 tests across indicators, strategy evaluation, the backtester (including
+236 tests across indicators, strategy evaluation, the backtester (including
 **slippage**), metrics, the CSV and **JSON** parsers, the storage layer,
 **workspace isolation**, **smart data fallback**, strategy import/export, the
 **research pipeline**, the **validation gate**, the **rolling buffer**, the

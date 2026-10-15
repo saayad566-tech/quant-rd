@@ -19,7 +19,7 @@ was verified, and what was deliberately **not** built. Nothing below is aspirati
 | **Multi-device sync (swarm)** | Done (data sync) | `IoSwarmNode`: an HTTP server advertising datasets plus client calls to probe, list and pull. Verified by a real loopback server/client test. Peer registry hard-capped at 15 devices. |
 | **Deep code audit / recover hidden assets** | Done | Scanned the tree; no unlinked modules or orphaned handlers were found, and the scan is now a standing check. |
 | **Strict type safety** | Done | `flutter analyze` → **0 issues**. (The brief names `tsc --noEmit`; this is a Dart project, so the equivalent gate is the Dart analyzer.) |
-| **Tests for fetch/fallback and backtest maths** | Done | **110 tests**, including slippage, the full data-fallback chain, and the validation gate. |
+| **Tests for fetch/fallback and backtest maths** | Done | **236 tests**, including slippage, the full data-fallback chain, and the validation gate. |
 
 ## Deliberately NOT built — and why
 
@@ -72,7 +72,7 @@ S/R clustering, Fibonacci, VWAP, volume profile, channels, patterns, regime,
 fractional differentiation, triple barrier), the Section 5 trailing stop
 implemented exactly, Black-Scholes and the Greeks, a plugin strategy engine with
 12 book-derived strategies, a framework ingestion pipeline, and an execution
-tracker — all wired into a Quant Engine screen and covered by 187 tests.
+tracker — all wired into a Quant Engine screen and covered by the suite (236 tests as of v1.6.1).
 
 **Not built, deliberately:** ingesting "2,000+ books". I do not have that corpus
 and will not pirate it, and there is no model runtime here to "train". The engine

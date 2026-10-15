@@ -87,3 +87,12 @@
 - [x] Three new screens wired into the sidebar; validation status in Strategy Lab
 - [x] 110 tests passing; analyzer clean; 0 placeholder hits
 - [x] SCOPE.md written: what is real, and what was deliberately not built
+
+## Session 8 — full application audit (v1.6.1)
+- [x] Static integrity: 0 stubs, 0 secrets, 0 orphans, 0 silent catch blocks
+- [x] Structural: 12/12 nav destinations wired (shell + icon + description); all screens in the barrel
+- [x] Strict type checking enabled; 63 surfaced issues all resolved
+- [x] 5 fire-and-forget futures made explicit with `unawaited(...)`
+- [x] Dead provider removed; doc drift corrected (236 tests, not 110)
+- [x] `flutter analyze` clean with strict lints; `flutter test` 236/236
+- [x] `AUDIT.md` written with findings, evidence and reproduction commands

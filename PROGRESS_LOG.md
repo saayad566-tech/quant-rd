@@ -320,3 +320,33 @@ matches the position I have held throughout.
   "over" and could not find a second moving average; the EDGAR fixture had 27-day
   "quarters"; and the options test needed the app theme and a scroll to reach the
   smile.
+
+## 2026-10-15 — Session 8 (full application audit)
+
+**Requested**: audit the full app. Full report in `AUDIT.md`.
+
+**Verdict**: structurally sound — no stubs, no fabricated data, no leaked
+secrets, no orphaned modules, every screen reachable. Five findings, two
+substantive, all remediated.
+
+**Findings and fixes**
+- **A1 (High) — strict type checking was not enabled.** The project ran the
+  default `flutter_lints` set only. In a financial engine that is the wrong
+  default, so `strict-casts`, `strict-inference` and `strict-raw-types` are now on
+  along with 24 extra rules. That surfaced **63 issues**, all resolved: 34
+  auto-fixed const/final trivia, 5 real raw-type holes in the JSON and swarm
+  parsers, 5 fire-and-forget futures now wrapped in explicit `unawaited(...)`, and
+  3 untyped collection literals.
+- **A2 (Medium) — documentation drift.** README and SCOPE claimed 38/110/187
+  tests; the real figure is 236. Corrected.
+- **A3 (Low) — `newIdProvider` was dead code.** Removed.
+- **A4 (Low) — two of my own proposed lint rules were wrong here.**
+  `avoid_slow_async_io` pushes toward blocking synchronous IO; disabled with the
+  reason recorded in the config. `unnecessary_await_in_return` is deprecated;
+  removed.
+- **A5 (Info) — 18 force-unwraps and 3 `Random()` sites reviewed.** Every
+  force-unwrap is guarded; the Random uses are ID generation, retry-backoff
+  jitter and seeded sample data. No change needed.
+
+**Verified**: `flutter analyze` → No issues found (with strict lints); `flutter
+test` → All tests passed (236).

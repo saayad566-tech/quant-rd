@@ -30,3 +30,11 @@
 - No live trading / broker execution — research tool by design.
 - No cloud sync / accounts — offline-first by design.
 - No iOS artifact — no macOS available.
+
+## From the v1.6.1 full audit (`AUDIT.md`)
+
+- **Strict lints were off until v1.6.1.** Now on; the 63 issues they surfaced are
+  fixed. Treat any new strict-lint failure as a build breaker.
+- **`avoid_slow_async_io` is deliberately disabled** — it recommends blocking
+  synchronous IO, which is wrong for a Flutter UI thread. The reason is recorded
+  in `analysis_options.yaml` so it reads as a decision, not an omission.
