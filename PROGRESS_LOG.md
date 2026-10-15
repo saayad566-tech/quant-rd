@@ -277,3 +277,46 @@ at the stop level and the gap optimism is stated.
 - Three real bugs were caught by these tests and fixed: a floating-point boundary
   error that skipped the +15% stop step, an inconsistent fill in the stop replay,
   and a test fixture whose swing low sat too close to the end of the series.
+
+## 2026-10-15 — Session 7 (closing the four gaps)
+
+**Directive received**: close four gaps — (1) scale the corpus pipeline from
+legitimate text, (2) integrate a fundamental data feed, (3) surface the options
+and GEX maths in a dashboard, (4) upgrade the supply-chain map to a three-tier
+dependency graph. The directive itself restates the anti-piracy guardrail, which
+matches the position I have held throughout.
+
+**Built and verified**
+- **Public-domain corpus extraction** (`corpus_parser.dart`): maps sentences onto
+  the executable schema — indicators, comparators, thresholds, periods (with weeks
+  converted to trading days). Anything ambiguous is **rejected with a stated
+  reason**, never guessed. Provenance is mandatory, and the extraction report is
+  serialisable. Wired into the Book Intelligence screen as an ingest panel.
+- **SEC EDGAR fundamentals** (`edgar_client.dart` + IO/web): keyless, with the
+  descriptive User-Agent the SEC requires, configurable in Configs. A pure parser
+  (testable offline) separates annual 10-K entries from quarterly 10-Q entries
+  under the same tag, and turns any unreadable figure into a reported gap.
+- **Fundamental scorer** (`fundamental_scorer.dart`): ROE, ROA, return on capital,
+  net margin, debt/equity, current ratio, EPS and revenue growth, 3-year EPS CAGR,
+  positive-earnings years, and — with a real price — market cap, earnings yield,
+  P/B and PEG. Every metric carries its formula. The framework screener now takes
+  an optional fundamentals map, so criteria that were passive placeholders become
+  genuinely **evaluated** (and genuinely fail when the numbers say so).
+- **Options & GEX dashboard** (`options_screen.dart`): a net-gamma-by-strike
+  heatmap, gamma wall and flip level, and the volatility smile. The chain comes
+  from a clearly-labelled simulated feed or your own pasted chain.
+- **Three-tier supply-chain graph** (`supply_chain_graph.dart`): 45+ nodes across
+  tier 1/2/3 with dependency edges, choke-point scoring, transitive traversal, and
+  a systemic risk-propagation model with a critical path.
+
+**Verified**
+- `flutter analyze` → **No issues found!**
+- `flutter test` → **All tests passed! (236)**, up from 187. New suites cover
+  graph construction/traversal/propagation, EDGAR parsing and scoring against a
+  realistic company-facts fixture, corpus extraction accept/reject paths, and the
+  options screen's GEX dashboard.
+- Bugs the tests caught and I fixed: the propagation model attenuated on the wrong
+  node's substitutability; the corpus parser read "oversold" as the operator
+  "over" and could not find a second moving average; the EDGAR fixture had 27-day
+  "quarters"; and the options test needed the app theme and a scroll to reach the
+  smile.

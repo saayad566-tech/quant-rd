@@ -79,3 +79,17 @@ and will not pirate it, and there is no model runtime here to "train". The engin
 executes extracted, documented rules as data — which is auditable, reproducible
 and correct, unlike a model that might have absorbed a book's idea approximately.
 Fundamental criteria are marked as needing a data feed rather than assumed.
+
+## Session 7 addendum — the four gaps closed
+
+**Built:** a public-domain corpus extractor with strict validation and stated
+rejections; a keyless SEC EDGAR client with a configurable User-Agent, a pure
+parser and a fundamental scorer whose criteria now genuinely evaluate; an Options
+& GEX dashboard with a labelled simulated feed or your own chain; and a
+three-tier supply-chain dependency graph with systemic risk propagation.
+
+**Not built, deliberately:** no in-copyright text is ingested — the corpus path
+accepts public-domain, open-source or user-supplied material only. No fundamental
+figure is ever invented: an unreadable line item becomes a reported gap and the
+UI shows a data-gap list. The simulated options chain is labelled SIMULATED
+wherever it appears, because modelled inputs are not observed prices.
