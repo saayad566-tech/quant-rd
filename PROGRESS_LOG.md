@@ -212,3 +212,68 @@ distribute in-copyright books. What it does instead:
 - `flutter test` → **All tests passed! (131)**, up from 110. New suite covers
   catalogue integrity, regional isolation, the screener on real candles, the
   supply-chain map, and framework tagging.
+
+## 2026-10-15 — Session 6 (quant mechanics + strategy plugin engine)
+
+**Directive received**: ingest 2,000+ trading books, extract their formulas, and
+"train the Strategy Engine" to execute them.
+
+**Copyright position, stated plainly.** I did not and will not ingest 2,000+
+in-copyright books — I do not have that corpus and acquiring it would be piracy.
+I also cannot "train" a model here. What I built is the thing that actually makes
+a trading engine correct: **explicit, deterministic, tested mathematics**. A model
+that had absorbed a book's idea approximately would be worse at this than a
+formula that is exactly right and can be audited.
+
+**Built and verified**
+- **Quant mechanics library** (`lib/domain/quant/quant_mechanics.dart`): N-bar
+  fractal pivots; least-squares trendlines with R-squared and touch counts;
+  volume-confirmed breakouts; support/resistance clustering; Fibonacci
+  retracements and extensions; VWAP and anchored VWAP; volume profile with point
+  of control and the 70% value area, plus high/low-volume nodes; OBV; an
+  order-flow delta **proxy** (labelled as one, because OHLCV bars carry no bid/ask
+  volume); Wilder ATR; ATR, Keltner, Bollinger and envelope channels; double
+  tops/bottoms; head and shoulders; gap taxonomy; a four-state regime classifier;
+  fractional differentiation; an ADF statistic; and triple-barrier labelling.
+- **Risk and statistics** (`quant_risk.dart`): the directive's **Section 5
+  step-up trailing stop implemented exactly** — a -10% floor, break-even at +10%,
+  +5% at +15%, +10% at +20%, a 10% gap to +50%, then 5-point steps — plus Kelly
+  sizing, expected value, max drawdown, Sharpe, fixed-fractional position sizing,
+  Engle-Granger cointegration, a Kalman filter and rolling z-scores.
+- **Options** (`quant_options.dart`): Black-Scholes pricing and the full Greeks
+  (verified against put-call parity and the standard reference value), implied
+  volatility by bisection that **refuses** a price outside the no-arbitrage
+  bounds, and dealer gamma exposure with a gamma wall and flip level.
+- **Strategy plugin engine** (`lib/domain/strategy_engine/`): `BaseStrategy`,
+  `Signal` with mandatory provenance, and a `StrategyFactory` registry. Twelve
+  concrete book-derived strategies (Minervini trend template, Weinstein Stage 2,
+  Turtle breakout, Wilder RSI, CAN SLIM's technical subset, 12-1 momentum,
+  value-area breakout, Wyckoff spring, VCP breakout, regression trendline
+  breakout, double-bottom reversal, gap-and-go).
+- **Framework ingestion pipeline** (`framework_ingestion.dart`): a declarative
+  schema (indicators, operators, thresholds, risk rules) parsed into live
+  strategies. Provenance is mandatory — a framework with no cited source is
+  rejected. Malformed documents report their failure instead of being dropped.
+- **Signal tracker** (`lib/domain/tracking/signal_tracker.dart`): follows every
+  signal through the bars with the trailing stop and produces win rate, profit
+  factor, expectancy, Sharpe, max drawdown, average gain/loss and hold time.
+- **Quant Engine screen**: mechanics, the strategy engine with provenance, and an
+  interactive trailing-stop ladder — wired into the sidebar and registered at
+  startup.
+
+**Honesty markers carried through the code**: fundamental criteria (EPS growth,
+ROIC, institutional ownership) are reported as needing data and never assumed to
+pass; relative-strength percentiles are cross-sectional and the single-symbol path
+says it uses absolute momentum; the delta proxy is labelled a proxy; replay fills
+at the stop level and the gap optimism is stated.
+
+**Verified**
+- `flutter analyze` → **No issues found!**
+- `flutter test` → **All tests passed! (187)**, up from 131. The new suites assert
+  the exact trailing-stop ladder, Black-Scholes against put-call parity and the
+  reference value, fractional differentiation, the VWAP hand calculation, the
+  triple barrier, cointegration on a constructed pair, and the ingestion
+  pipeline's accept/reject paths.
+- Three real bugs were caught by these tests and fixed: a floating-point boundary
+  error that skipped the +15% stop step, an inconsistent fill in the stop replay,
+  and a test fixture whose swing low sat too close to the end of the series.

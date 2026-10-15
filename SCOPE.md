@@ -64,3 +64,18 @@ redistributes their text. If you own a copy, "Add my own copy" indexes it
 locally. Fundamental criteria (EPS growth, ROIC, institutional ownership) are
 reported as **N/A** because this build holds no fundamentals feed — they are
 never silently passed.
+
+## Session 6 addendum — quant mechanics and the strategy engine
+
+**Built:** a deterministic mechanics library (pivots, trendlines with R-squared,
+S/R clustering, Fibonacci, VWAP, volume profile, channels, patterns, regime,
+fractional differentiation, triple barrier), the Section 5 trailing stop
+implemented exactly, Black-Scholes and the Greeks, a plugin strategy engine with
+12 book-derived strategies, a framework ingestion pipeline, and an execution
+tracker — all wired into a Quant Engine screen and covered by 187 tests.
+
+**Not built, deliberately:** ingesting "2,000+ books". I do not have that corpus
+and will not pirate it, and there is no model runtime here to "train". The engine
+executes extracted, documented rules as data — which is auditable, reproducible
+and correct, unlike a model that might have absorbed a book's idea approximately.
+Fundamental criteria are marked as needing a data feed rather than assumed.
