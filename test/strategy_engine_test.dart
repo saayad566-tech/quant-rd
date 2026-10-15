@@ -182,7 +182,7 @@ void main() {
         'id': 'test.no_entry',
         'name': 'No entry',
         'source': {'title': 'X', 'author': 'Y'},
-        'entry': [],
+        'entry': <dynamic>[],
       });
       expect(() => FrameworkParser.parseDocument(doc), throwsA(isA<FrameworkParseError>()));
     });

@@ -50,7 +50,7 @@ void main() {
   group('pipeline run', () {
     test('evaluates every candidate and returns a bounded, sorted leaderboard', () async {
       final candles = SampleData.generate(symbol: 'TEST', bars: 400, interval: BarInterval.d1);
-      final pipeline = const ResearchPipeline();
+      const pipeline = ResearchPipeline();
       final report = await pipeline.run(
         candles: candles,
         datasetId: 'd1',
