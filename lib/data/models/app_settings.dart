@@ -26,6 +26,10 @@ class AppSettings {
   /// so cross-market leakage cannot occur.
   final MarketRegion marketRegion;
 
+  /// The User-Agent sent to SEC EDGAR. The SEC requires a descriptive agent and
+  /// refuses requests without one.
+  final String edgarUserAgent;
+
   const AppSettings({
     this.themeMode = ThemeMode.dark,
     this.defaultConfig = const BacktestConfig(),
@@ -34,6 +38,7 @@ class AppSettings {
     this.includeSampleData = true,
     this.modelBaseUrl = '',
     this.marketRegion = MarketRegion.india,
+    this.edgarUserAgent = '',
   });
 
   AppSettings copyWith({
@@ -44,6 +49,7 @@ class AppSettings {
     bool? includeSampleData,
     String? modelBaseUrl,
     MarketRegion? marketRegion,
+    String? edgarUserAgent,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -53,6 +59,7 @@ class AppSettings {
         includeSampleData: includeSampleData ?? this.includeSampleData,
         modelBaseUrl: modelBaseUrl ?? this.modelBaseUrl,
         marketRegion: marketRegion ?? this.marketRegion,
+        edgarUserAgent: edgarUserAgent ?? this.edgarUserAgent,
       );
 
   Map<String, dynamic> toMap() => {
@@ -63,6 +70,7 @@ class AppSettings {
         'include_sample_data': includeSampleData ? 1 : 0,
         'model_base_url': modelBaseUrl,
         'market_region': marketRegion.name,
+        'edgar_user_agent': edgarUserAgent,
       };
 
   factory AppSettings.fromMap(Map<String, dynamic> m) => AppSettings(
@@ -75,5 +83,6 @@ class AppSettings {
         includeSampleData: ((m['include_sample_data'] as num?)?.toInt() ?? 1) == 1,
         modelBaseUrl: (m['model_base_url'] as String?) ?? '',
         marketRegion: MarketRegion.fromId(m['market_region'] as String?),
+        edgarUserAgent: (m['edgar_user_agent'] as String?) ?? '',
       );
 }
