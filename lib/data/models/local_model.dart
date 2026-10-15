@@ -66,7 +66,7 @@ class ModelManifest {
   factory ModelManifest.fromJson(Map<String, dynamic> m) => ModelManifest(
         version: (m['version'] as String?) ?? '1',
         models: ((m['models'] as List?) ?? const [])
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => ModelInfo.fromMap(e.cast<String, dynamic>()))
             .toList(),
       );

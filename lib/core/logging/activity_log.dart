@@ -105,6 +105,6 @@ class ActivityLog {
   }
 
   void dispose() {
-    _controller.close();
+    unawaited(_controller.close());
   }
 }

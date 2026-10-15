@@ -25,12 +25,12 @@ class JsonCandleParser {
     try {
       decoded = jsonDecode(content);
     } catch (e) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['This does not look like valid JSON.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
 
@@ -90,7 +90,7 @@ class JsonCandleParser {
     return null;
   }
 
-  static CandleParseReport _parseYahoo(Map chart, List<String> warnings) {
+  static CandleParseReport _parseYahoo(Map<dynamic, dynamic> chart, List<String> warnings) {
     final err = chart['error'];
     if (err != null) {
       final msg = err is Map ? (err['description'] ?? 'unknown error') : err.toString();
@@ -104,53 +104,53 @@ class JsonCandleParser {
     }
     final results = chart['result'];
     if (results is! List || results.isEmpty) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['Yahoo Finance response contained no results.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
     final r0 = results.first;
     if (r0 is! Map) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['Unexpected Yahoo Finance structure.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
     final timestamps = (r0['timestamp'] as List?) ?? const [];
     final indicators = r0['indicators'];
     if (indicators is! Map) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['Yahoo Finance response had no indicators.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
     final quotes = indicators['quote'];
     if (quotes is! List || quotes.isEmpty) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['Yahoo Finance response had no quotes.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
     final quote = quotes.first;
     if (quote is! Map) {
-      return CandleParseReport(
-        candles: const [],
+      return const CandleParseReport(
+        candles: [],
         totalRows: 0,
         skippedRows: 0,
         warnings: ['Unexpected Yahoo Finance quote structure.'],
-        detectedColumns: const [],
+        detectedColumns: [],
       );
     }
     final opens = quote['open'] as List?;
@@ -183,7 +183,7 @@ class JsonCandleParser {
     );
   }
 
-  static double? _num(List? list, int i) {
+  static double? _num(List<dynamic>? list, int i) {
     if (list == null || i >= list.length) return null;
     final v = list[i];
     if (v == null) return null;
