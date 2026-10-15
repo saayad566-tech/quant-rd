@@ -7,6 +7,7 @@ export 'book_intelligence_screen.dart';
 export 'dashboard_screen.dart';
 export 'data_manager_screen.dart';
 export 'models_screen.dart';
+export 'quant_engine_screen.dart';
 export 'research_screen.dart';
 export 'results_screen.dart';
 export 'strategy_lab_screen.dart';
