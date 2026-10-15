@@ -47,14 +47,21 @@ class MarketDataClient {
     String? customUrl,
   }) async {
     final cleanSymbol = symbol.trim().toUpperCase();
-    if (provider != ApiProvider.custom && apiKey.trim().isEmpty) {
+    if (provider.requiresKey && apiKey.trim().isEmpty) {
       throw MarketDataException(ErrorKind.auth, 'Add your ${provider.label} API key first.');
+    }
+    if (provider == ApiProvider.custom && (customUrl ?? apiKey).trim().isEmpty) {
+      throw MarketDataException(ErrorKind.validation, 'Enter a valid custom endpoint URL.');
     }
     if (cleanSymbol.isEmpty) {
       throw MarketDataException(ErrorKind.validation, 'Enter a symbol to fetch.');
     }
 
     switch (provider) {
+      case ApiProvider.yahoo:
+        return _fetchYahoo(cleanSymbol, interval);
+      case ApiProvider.binance:
+        return _fetchBinance(cleanSymbol, interval, outputSize);
       case ApiProvider.alphaVantage:
         return _fetchAlphaVantage(cleanSymbol, interval, apiKey, outputSize);
       case ApiProvider.twelveData:
@@ -336,13 +343,157 @@ class MarketDataClient {
     return _finalise(candles, symbol);
   }
 
+  /// Yahoo Finance chart API — free and keyless.
+  Future<List<Candle>> _fetchYahoo(String symbol, BarInterval interval) async {
+    final (yInterval, yRange) = _yahooParams(interval);
+    final res = await _get(
+      '${ApiProvider.yahoo.baseUrl}/v8/finance/chart/$symbol',
+      query: {'interval': yInterval, 'range': yRange},
+      headers: {'User-Agent': _userAgent, 'Accept': 'application/json'},
+    );
+    final data = res.data;
+    if (data is! Map) throw MarketDataException(ErrorKind.parse, 'Unexpected Yahoo Finance response.');
+    final chart = data['chart'];
+    if (chart is! Map) throw MarketDataException(ErrorKind.parse, 'Unexpected Yahoo Finance response.');
+    final err = chart['error'];
+    if (err != null) {
+      final msg = err is Map ? (err['description'] ?? 'unknown error') : err.toString();
+      throw MarketDataException(ErrorKind.validation, 'Yahoo Finance: $msg');
+    }
+    final results = chart['result'];
+    if (results is! List || results.isEmpty) {
+      throw MarketDataException(ErrorKind.notFound, 'No data returned for $symbol.');
+    }
+    final r0 = (results.first as Map).cast<String, dynamic>();
+    final timestamps = (r0['timestamp'] as List?) ?? const [];
+    final indicators = r0['indicators'];
+    if (indicators is! Map) throw MarketDataException(ErrorKind.parse, 'Yahoo Finance returned no indicators.');
+    final quotes = indicators['quote'];
+    if (quotes is! List || quotes.isEmpty) throw MarketDataException(ErrorKind.parse, 'Yahoo Finance returned no quotes.');
+    final quote = (quotes.first as Map).cast<String, dynamic>();
+    final opens = quote['open'] as List?;
+    final highs = quote['high'] as List?;
+    final lows = quote['low'] as List?;
+    final closes = quote['close'] as List?;
+    final volumes = quote['volume'] as List?;
+
+    final candles = <Candle>[];
+    for (var i = 0; i < timestamps.length; i++) {
+      final o = _d(opens != null && i < opens.length ? opens[i] : null);
+      final h = _d(highs != null && i < highs.length ? highs[i] : null);
+      final l = _d(lows != null && i < lows.length ? lows[i] : null);
+      final cl = _d(closes != null && i < closes.length ? closes[i] : null);
+      final v = _d(volumes != null && i < volumes.length ? volumes[i] : null) ?? 0;
+      if (o == null || h == null || l == null || cl == null) continue;
+      candles.add(Candle(
+        time: DateTime.fromMillisecondsSinceEpoch((timestamps[i] as num).toInt() * 1000, isUtc: true),
+        open: o,
+        high: h,
+        low: l,
+        close: cl,
+        volume: v,
+      ));
+    }
+    return _finalise(candles, symbol);
+  }
+
+  (String, String) _yahooParams(BarInterval interval) {
+    switch (interval) {
+      case BarInterval.m1:
+        return ('1m', '5d');
+      case BarInterval.m5:
+        return ('5m', '1mo');
+      case BarInterval.m15:
+        return ('15m', '1mo');
+      case BarInterval.m30:
+        return ('30m', '3mo');
+      case BarInterval.h1:
+      case BarInterval.h4:
+        return ('1h', '2y');
+      case BarInterval.d1:
+        return ('1d', '10y');
+      case BarInterval.w1:
+        return ('1wk', 'max');
+    }
+  }
+
+  /// Binance public klines — free and keyless.
+  Future<List<Candle>> _fetchBinance(String symbol, BarInterval interval, int size) async {
+    final pair = _binancePair(symbol);
+    final res = await _get('${ApiProvider.binance.baseUrl}/api/v3/klines', query: {
+      'symbol': pair,
+      'interval': _binanceInterval(interval),
+      'limit': size.clamp(1, 1000),
+    });
+    final data = res.data;
+    if (data is Map) {
+      final msg = data['msg'] ?? 'request rejected';
+      throw MarketDataException(ErrorKind.validation, 'Binance: $msg (check the pair, e.g. BTCUSDT).');
+    }
+    if (data is! List) throw MarketDataException(ErrorKind.parse, 'Unexpected Binance response.');
+    final candles = <Candle>[];
+    for (final row in data) {
+      if (row is! List || row.length < 6) continue;
+      final o = _d(row[1]);
+      final h = _d(row[2]);
+      final l = _d(row[3]);
+      final cl = _d(row[4]);
+      if (o == null || h == null || l == null || cl == null) continue;
+      candles.add(Candle(
+        time: DateTime.fromMillisecondsSinceEpoch((row[0] as num).toInt(), isUtc: true),
+        open: o,
+        high: h,
+        low: l,
+        close: cl,
+        volume: _d(row[5]) ?? 0,
+      ));
+    }
+    return _finalise(candles, symbol);
+  }
+
+  /// Normalises a user symbol into a Binance pair (BTC-USD -> BTCUSDT).
+  String _binancePair(String symbol) {
+    var s = symbol.toUpperCase().replaceAll('-', '').replaceAll('/', '').replaceAll('_', '').replaceAll(' ', '');
+    if (s.endsWith('USD') && !s.endsWith('USDT')) {
+      s = '${s}T';
+    }
+    return s;
+  }
+
+  String _binanceInterval(BarInterval interval) {
+    switch (interval) {
+      case BarInterval.m1:
+        return '1m';
+      case BarInterval.m5:
+        return '5m';
+      case BarInterval.m15:
+        return '15m';
+      case BarInterval.m30:
+        return '30m';
+      case BarInterval.h1:
+        return '1h';
+      case BarInterval.h4:
+        return '4h';
+      case BarInterval.d1:
+        return '1d';
+      case BarInterval.w1:
+        return '1w';
+    }
+  }
+
+  static const String _userAgent = 'Mozilla/5.0 (compatible; QuantRD/1.1)';
+
   // --- Helpers ------------------------------------------------------------
 
-  Future<Response<dynamic>> _get(String url, {Map<String, dynamic>? query}) async {
+  Future<Response<dynamic>> _get(String url, {Map<String, dynamic>? query, Map<String, String>? headers}) async {
     Object? lastError;
     for (var attempt = 0; attempt <= AppLimits.maxNetworkRetries; attempt++) {
       try {
-        return await _dio.get<dynamic>(url, queryParameters: query);
+        return await _dio.get<dynamic>(
+          url,
+          queryParameters: query,
+          options: headers == null ? null : Options(headers: headers),
+        );
       } on DioException catch (e) {
         lastError = e;
         if (!_retryable(e) || attempt == AppLimits.maxNetworkRetries) break;
@@ -427,6 +578,8 @@ class MarketDataClient {
   double? _d(Object? v) {
     if (v == null) return null;
     if (v is num) return v.toDouble();
-    return double.tryParse(v.toString());
+    final s = v.toString().trim();
+    if (s.isEmpty || s == 'null') return null;
+    return double.tryParse(s);
   }
 }

@@ -10,24 +10,11 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants.dart';
 import '../models/candle.dart';
+import 'parse_report.dart';
 
-class CsvParseReport {
-  final List<Candle> candles;
-  final int totalRows;
-  final int skippedRows;
-  final List<String> warnings;
-  final List<String> detectedColumns;
-
-  const CsvParseReport({
-    required this.candles,
-    required this.totalRows,
-    required this.skippedRows,
-    required this.warnings,
-    required this.detectedColumns,
-  });
-
-  bool get isEmpty => candles.isEmpty;
-}
+/// Alias kept so CSV call sites read naturally; the report type is shared with
+/// the JSON parser.
+typedef CsvParseReport = CandleParseReport;
 
 class CsvCandleParser {
   const CsvCandleParser._();
@@ -104,7 +91,7 @@ class CsvCandleParser {
         continue;
       }
       try {
-        final time = _parseDate(row[iDate].toString().trim());
+        final time = parseTimestamp(row[iDate].toString().trim());
         if (time == null) {
           skipped++;
           continue;
@@ -172,7 +159,7 @@ class CsvCandleParser {
 
   static bool _looksLikeHeader(List<String> row) {
     final alpha = row.where((c) => RegExp(r'[a-zA-Z]').hasMatch(c)).length;
-    return alpha >= 2 && !row.any((c) => _parseDate(c) != null);
+    return alpha >= 2 && !row.any((c) => parseTimestamp(c) != null);
   }
 
   static int _indexOfAny(List<String> row, List<String> aliases) {
@@ -189,7 +176,7 @@ class CsvCandleParser {
     return double.tryParse(s);
   }
 
-  static DateTime? _parseDate(String s) {
+  static DateTime? parseTimestamp(String s) {
     if (s.isEmpty) return null;
     // Epoch seconds / milliseconds.
     final asInt = int.tryParse(s);

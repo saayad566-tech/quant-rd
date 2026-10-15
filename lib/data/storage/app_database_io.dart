@@ -91,6 +91,7 @@ class IoAppDatabase implements AppDatabase {
         sizing TEXT NOT NULL,
         sizing_value REAL NOT NULL,
         allow_short INTEGER NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
         updated_at INTEGER NOT NULL
       )
     ''');
@@ -135,6 +136,10 @@ class IoAppDatabase implements AppDatabase {
       }
       await db.execute('CREATE INDEX IF NOT EXISTS idx_datasets_ws ON datasets(workspace_id, created_at)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_backtests_ws ON backtests(workspace_id, run_at)');
+    }
+    if (oldVersion < 3) {
+      // v3: strategies gain an enabled/active flag.
+      await _addColumnIfMissing(db, 'strategies', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     }
   }
 
@@ -299,6 +304,7 @@ class IoAppDatabase implements AppDatabase {
         sizing: PositionSizing.values.firstWhere((e) => e.name == r['sizing'], orElse: () => PositionSizing.percentOfEquity),
         sizingValue: (r['sizing_value'] as num).toDouble(),
         allowShort: (r['allow_short'] as num).toInt() == 1,
+        enabled: ((r['enabled'] as num?)?.toInt() ?? 1) == 1,
         updatedAt: DateTime.fromMillisecondsSinceEpoch((r['updated_at'] as num).toInt()),
       );
 
@@ -319,6 +325,7 @@ class IoAppDatabase implements AppDatabase {
         'sizing': strategy.sizing.name,
         'sizing_value': strategy.sizingValue,
         'allow_short': strategy.allowShort ? 1 : 0,
+        'enabled': strategy.enabled ? 1 : 0,
         'updated_at': strategy.updatedAt.millisecondsSinceEpoch,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,

@@ -36,11 +36,12 @@ class AppLimits {
 class StorageKeys {
   const StorageKeys._();
   static const String databaseName = 'quant_rd.db';
-  static const String databaseVersion = '2';
+  static const String databaseVersion = '3';
   static const String settingsBox = 'quant_rd_settings';
 
   /// The workspace created on first run; also the fallback for legacy rows.
   static const String defaultWorkspaceId = 'ws-default';
+  // v3 adds strategies.enabled
   static const String defaultWorkspaceName = 'Default project';
 
   // Secure-store keys for user supplied API credentials.

@@ -197,6 +197,9 @@ class StrategySpec {
   final PositionSizing sizing;
   final double sizingValue;
   final bool allowShort;
+
+  /// Whether the strategy is active (enabled) in this workspace.
+  final bool enabled;
   final DateTime updatedAt;
 
   const StrategySpec({
@@ -212,6 +215,7 @@ class StrategySpec {
     this.sizing = PositionSizing.percentOfEquity,
     this.sizingValue = 100,
     this.allowShort = false,
+    this.enabled = true,
     required this.updatedAt,
   });
 
@@ -226,6 +230,7 @@ class StrategySpec {
     PositionSizing? sizing,
     double? sizingValue,
     bool? allowShort,
+    bool? enabled,
     DateTime? updatedAt,
   }) =>
       StrategySpec(
@@ -241,6 +246,7 @@ class StrategySpec {
         sizing: sizing ?? this.sizing,
         sizingValue: sizingValue ?? this.sizingValue,
         allowShort: allowShort ?? this.allowShort,
+        enabled: enabled ?? this.enabled,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
@@ -268,6 +274,7 @@ class StrategySpec {
         'sizing': sizing.name,
         'sizing_value': sizingValue,
         'allow_short': allowShort ? 1 : 0,
+        'enabled': enabled ? 1 : 0,
         'updated_at': updatedAt.millisecondsSinceEpoch,
       };
 
@@ -284,6 +291,7 @@ class StrategySpec {
         sizing: PositionSizing.values.firstWhere((e) => e.name == m['sizing'], orElse: () => PositionSizing.percentOfEquity),
         sizingValue: (m['sizing_value'] as num?)?.toDouble() ?? 100,
         allowShort: ((m['allow_short'] as num?)?.toInt() ?? 0) == 1,
+        enabled: ((m['enabled'] as num?)?.toInt() ?? 1) == 1,
         updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updated_at'] as num?)?.toInt() ?? 0),
       );
 }

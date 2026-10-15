@@ -22,11 +22,15 @@ enum BarInterval {
 
 enum DataSource {
   csvImport('CSV import'),
+  jsonImport('JSON import'),
+  yahooFinance('Yahoo Finance (free)'),
+  binance('Binance (free)'),
   alphaVantage('Alpha Vantage'),
   twelveData('Twelve Data'),
   polygon('Polygon.io'),
   finnhub('Finnhub'),
-  custom('Custom endpoint');
+  custom('Custom endpoint'),
+  sample('Sample data');
 
   const DataSource(this.label);
   final String label;
