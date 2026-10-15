@@ -95,6 +95,7 @@ class IoAppDatabase implements AppDatabase {
         allow_short INTEGER NOT NULL,
         enabled INTEGER NOT NULL DEFAULT 1,
         validation_json TEXT,
+        framework_id TEXT,
         updated_at INTEGER NOT NULL
       )
     ''');
@@ -147,6 +148,10 @@ class IoAppDatabase implements AppDatabase {
     if (oldVersion < 4) {
       // v4: strategies record the result of the mandatory validation gate.
       await _addColumnIfMissing(db, 'strategies', 'validation_json', 'TEXT');
+    }
+    if (oldVersion < 5) {
+      // v5: strategies cite the book framework they implement.
+      await _addColumnIfMissing(db, 'strategies', 'framework_id', 'TEXT');
     }
   }
 
@@ -313,6 +318,7 @@ class IoAppDatabase implements AppDatabase {
         allowShort: (r['allow_short'] as num).toInt() == 1,
         enabled: ((r['enabled'] as num?)?.toInt() ?? 1) == 1,
         validation: _validationFromRow(r['validation_json']),
+        frameworkId: r['framework_id'] as String?,
         updatedAt: DateTime.fromMillisecondsSinceEpoch((r['updated_at'] as num).toInt()),
       );
 
@@ -344,6 +350,7 @@ class IoAppDatabase implements AppDatabase {
         'allow_short': strategy.allowShort ? 1 : 0,
         'enabled': strategy.enabled ? 1 : 0,
         'validation_json': strategy.validation == null ? null : jsonEncode(strategy.validation!.toMap()),
+        'framework_id': strategy.frameworkId,
         'updated_at': strategy.updatedAt.millisecondsSinceEpoch,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,

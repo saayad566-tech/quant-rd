@@ -36,6 +36,7 @@ class BuiltInStrategies {
 
   static StrategySpec smaCrossover() => StrategySpec(
         id: 'builtin.sma_cross',
+        frameworkId: 'weinstein-stage',
         name: 'SMA Crossover (50/200)',
         description: 'Classic golden/death cross trend follower.',
         isBuiltIn: true,
@@ -59,6 +60,7 @@ class BuiltInStrategies {
 
   static StrategySpec emaCrossover() => StrategySpec(
         id: 'builtin.ema_cross',
+        frameworkId: 'weinstein-stage',
         name: 'EMA Crossover (12/26)',
         description: 'Faster moving-average crossover for shorter horizons.',
         isBuiltIn: true,
@@ -82,6 +84,7 @@ class BuiltInStrategies {
 
   static StrategySpec rsiReversion() => StrategySpec(
         id: 'builtin.rsi_reversion',
+        frameworkId: 'wilder-rsi-atr',
         name: 'RSI Mean Reversion',
         description: 'Buys oversold (RSI < 30), exits overbought (RSI > 70).',
         isBuiltIn: true,
@@ -106,6 +109,7 @@ class BuiltInStrategies {
 
   static StrategySpec macdTrend() => StrategySpec(
         id: 'builtin.macd_trend',
+        frameworkId: 'momentum-factor',
         name: 'MACD Trend',
         description: 'MACD line crossing its signal line.',
         isBuiltIn: true,
@@ -129,6 +133,7 @@ class BuiltInStrategies {
 
   static StrategySpec bollingerBreakout() => StrategySpec(
         id: 'builtin.bollinger_breakout',
+        frameworkId: 'turtle-trend',
         name: 'Bollinger Breakout',
         description: 'Buys a close above the upper band, exits back to the mean.',
         isBuiltIn: true,

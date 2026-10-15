@@ -72,6 +72,7 @@ class _ContentArea extends StatelessWidget {
       NavDestination.backtest => const BacktestScreen(),
       NavDestination.results => const ResultsScreen(),
       NavDestination.research => const ResearchScreen(),
+      NavDestination.knowledge => const BookIntelligenceScreen(),
       NavDestination.models => const ModelsScreen(),
       NavDestination.swarm => const SwarmScreen(),
       NavDestination.activityLog => const ActivityLogScreen(),

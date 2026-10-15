@@ -216,6 +216,7 @@ class ResearchPipeline {
 
   static StrategySpec _cross(String name, SeriesRef fast, SeriesRef slow, DateTime stamp) => StrategySpec(
         id: 'gen.cross.${fast.period}.${slow.period}.${fast.type.name}',
+        frameworkId: 'weinstein-stage',
         name: '$name crossover',
         description: 'Generated: enter when the fast line crosses above the slow line, exit on the reverse cross.',
         entry: [Condition(left: Operand.series(fast), op: ComparisonOp.crossesAbove, right: Operand.series(slow))],
@@ -226,6 +227,7 @@ class ResearchPipeline {
 
   static StrategySpec _rsi(double lo, double hi, DateTime stamp) => StrategySpec(
         id: 'gen.rsi.${lo.toInt()}.${hi.toInt()}',
+        frameworkId: 'wilder-rsi-atr',
         name: 'RSI mean-reversion ${lo.toInt()}/${hi.toInt()}',
         description: 'Generated: buy while RSI is below $lo, exit when RSI rises above $hi.',
         entry: [Condition(left: Operand.series(const SeriesRef(IndicatorType.rsi, period: 14)), op: ComparisonOp.lessThan, right: Operand.constant(lo))],
@@ -236,6 +238,7 @@ class ResearchPipeline {
 
   static StrategySpec _macd(DateTime stamp) => StrategySpec(
         id: 'gen.macd',
+        frameworkId: 'momentum-factor',
         name: 'MACD trend',
         description: 'Generated: enter on a bullish MACD cross, exit on a bearish one.',
         entry: [
@@ -258,6 +261,7 @@ class ResearchPipeline {
 
   static StrategySpec _bollinger(double mult, DateTime stamp) => StrategySpec(
         id: 'gen.boll.${mult.toStringAsFixed(1)}',
+        frameworkId: 'turtle-trend',
         name: 'Bollinger breakout ${mult}x',
         description: 'Generated: buy a close above the upper band, exit at the middle band.',
         entry: [

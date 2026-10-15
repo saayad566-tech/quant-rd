@@ -10,6 +10,7 @@ enum NavDestination {
   backtest('Backtest'),
   results('Results'),
   research('Research'),
+  knowledge('Book Intelligence'),
   models('Local Models'),
   swarm('Device Swarm'),
   activityLog('Activity Log');
