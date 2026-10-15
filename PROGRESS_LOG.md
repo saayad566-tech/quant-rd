@@ -167,3 +167,48 @@ real multi-device hardware that this build does not have.
 - `flutter test` → **All tests passed! (110)**, up from 83. New suites: rolling
   buffer, research pipeline, validation gate, and the LAN swarm loopback.
 - Placeholder scan across `lib/` + `test/`: **0 hits**.
+
+## 2026-10-15 — Session 5 (book-framework knowledge engine)
+
+**Directive received**: build a "100-book domain knowledge engine" into Strategy
+Lab — every strategy citing its book framework, supply-chain "picks and shovels"
+intelligence, an education panel, a mandatory compliance banner, and strict
+regional isolation (India vs US).
+
+**Copyright position, stated plainly.** The app does **not** download or
+distribute in-copyright books. What it does instead:
+- encodes the **frameworks** (publicly documented rules, formulas and screening
+  criteria) with plain-prose attribution to each source book;
+- downloads **public-domain titles in full from Project Gutenberg**, which hosts
+  them for anyone to copy and reuse;
+- lets the user index **their own copy** of any book locally, which is never
+  uploaded.
+
+**Built and verified**
+- `BookFramework` / `BookRef` / `FrameworkCriterion` models and a catalogue of
+  80+ benchmark titles plus 11 detailed frameworks (Magic Formula, CAN SLIM,
+  Minervini Trend Template + VCP, Graham defensive, Lynch PEG, Piotroski F-Score,
+  Weinstein stage analysis, momentum factor, Turtle trend, low-volatility/quality,
+  Wilder RSI/ATR), each with cited sources.
+- `FrameworkScreener`: computes the technical criteria from **real candles** —
+  moving-average stack, 200-day slope, distance from the 52-week high/low,
+  cross-sectional relative-strength percentile, volume dry-up, and a genuine VCP
+  contraction detector. Criteria needing fundamentals are reported as **N/A and
+  never counted as passes**.
+- `MarketRegion` with a single `filter()` funnel: India accepts NSE/BSE listings
+  and rejects US tickers, the US the reverse, crypto is neutral. Zero
+  cross-market leakage, unit-tested.
+- `SupplyChainTheme` map for AI infrastructure, EV, energy/grid, semiconductors,
+  defence and water — front-line names versus upstream choke-points.
+- `BookLibrary`: real Project Gutenberg fetcher (verified live: HTTP 200, full
+  text), own-copy indexing, and passage search across stored books.
+- New **Book Intelligence** screen (Frameworks · Screener · Supply chain ·
+  Book library) plus a non-dismissible compliance banner in Strategy Lab, a
+  framework citation on each tagged strategy (DB v5 `framework_id`), and a
+  market-region selector in Configs.
+
+**Verified**
+- `flutter analyze` → **No issues found!**
+- `flutter test` → **All tests passed! (131)**, up from 110. New suite covers
+  catalogue integrity, regional isolation, the screener on real candles, the
+  supply-chain map, and framework tagging.

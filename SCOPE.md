@@ -48,3 +48,19 @@ The application is a complete, tested, production-grade **quantitative research
 and backtesting workstation** with real data ingestion, a real validation gate, a
 real research pipeline, real LAN data sync, and honest, visible boundaries around
 the parts that need native runtimes or multiple devices.
+
+## Session 5 addendum — the book knowledge engine
+
+**Built:** a framework knowledge base (11 detailed frameworks with documented
+criteria, cited to their source books), a screener that computes the technical
+criteria from real candles, strict regional isolation, a supply-chain choke-point
+map, a **real public-domain book fetcher** (Project Gutenberg, verified live), an
+own-copy indexer, and a mandatory compliance banner.
+
+**Not built, deliberately:** downloading in-copyright books. Titles by Greenblatt,
+O'Neil, Minervini, Graham and Lynch are commercial works; the app encodes their
+*documented rules* (which are facts) and cites them, but never fetches or
+redistributes their text. If you own a copy, "Add my own copy" indexes it
+locally. Fundamental criteria (EPS growth, ROIC, institutional ownership) are
+reported as **N/A** because this build holds no fundamentals feed — they are
+never silently passed.
