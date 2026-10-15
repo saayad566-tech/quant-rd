@@ -56,6 +56,23 @@ optional and uses *your own* API keys, stored only in the device secure store.
   and copied to the clipboard in one tap.
 - **Resilient by design** — global error handling turns failures into calm,
   self-explanatory messages and keeps the rest of the app running.
+- **Research Engine** — a sequential pipeline: profile the dataset → generate
+  candidate strategies from parameter grids → backtest every one → rank them on
+  real metrics. Bounded work queue (yields between batches) and a bounded
+  leaderboard (only the top K kept), so a large sweep cannot spike memory or
+  stall the frame loop.
+- **Mandatory validation gate** — a strategy carries a validation record produced
+  by a real backtest over real bars, with an explicit, inspectable policy
+  (minimum trades, profit factor, drawdown, expectancy). Enabling an unvalidated
+  strategy prompts you to run the gate first. No metric is ever asserted.
+- **Local model hub** — download, SHA-256-verify, list and remove GGUF models on
+  the device. **The inference runtime is not bundled**, and the UI says so
+  plainly rather than implying it can run a model.
+- **Device swarm** — a real LAN data-sync layer: a node advertises its datasets
+  over HTTP on the local network and peers pull them (up to 15 devices). No
+  cloud, no accounts. It does **not** pool compute across devices.
+- **Rolling buffer caps** — live candle history is held in a bounded buffer with
+  a hard 5,000-bar cap, so a long-running feed cannot leak memory.
 - **Runtime asset packs** — large datasets live in a *separate* repository,
   chunked and downloaded on demand, verified by SHA-256.
 
@@ -123,10 +140,12 @@ Built for a smooth 60/120 Hz experience:
 
 ## Testing
 
-83 tests across indicators, strategy evaluation, the backtester (including
+110 tests across indicators, strategy evaluation, the backtester (including
 **slippage**), metrics, the CSV and **JSON** parsers, the storage layer,
-**workspace isolation**, **smart data fallback**, strategy import/export, export,
-the activity log, error reporting, and a full UI navigation walk (which also
+**workspace isolation**, **smart data fallback**, strategy import/export, the
+**research pipeline**, the **validation gate**, the **rolling buffer**, the
+**LAN swarm** (a real loopback server/client exchange), export, the activity log,
+error reporting, and a full UI navigation walk across every screen (which also
 guards against layout overflow). One test parses a **real captured Yahoo Finance
 response**, so the free data path is verified against the live API shape.
 

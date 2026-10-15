@@ -26,3 +26,9 @@
 | 22 | Shared `CandleParseReport` with `typedef CsvParseReport` | One report type for CSV and JSON without churning call sites | Duplicate report classes |
 | 23 | Strategy `enabled` flag in a v3 column migration | "Active status" needs durable, queryable state | Storing disabled ids in settings (opaque, no migration path) |
 | 24 | Tolerant strategy import (fills defaults for missing keys) | Hand-written or third-party JSON should not be rejected outright | Strict parsing (rejects most real-world input) |
+| 25 | Validation gate enforced in the UI, not just computed | The brief demands strategies never be published on an assertion | Storing metrics without gating enablement |
+| 26 | Research pipeline is deterministic/statistical, not LLM-driven | No local model runtime exists; an LLM claim would be fabricated | Pretending rule-based sweeps are "AI agents" |
+| 27 | Model hub ships without an inference runtime, stated in the UI | Acquiring models is real; running them is not, in this build | A fake "ask the model" screen |
+| 28 | Swarm syncs data over plain HTTP on the LAN | Genuinely implementable and testable; no broker or cloud needed | Claiming compute pooling we cannot build |
+| 29 | Rolling buffer with a hard 5,000 cap | An unbounded feed is the classic streaming memory leak | Unbounded lists |
+| 30 | Validation stored on the strategy row (DB v4), not a new table | One column, one migration, no new repository | A separate validations table (more surface for little gain) |

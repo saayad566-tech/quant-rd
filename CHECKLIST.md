@@ -77,3 +77,13 @@
 - [x] 83 tests passing (slippage, fallback, JSON, import/export); analyzer clean
 - [x] Live endpoint verified: real AAPL / BTC-USD / EURUSD=X data with no key
 - [x] Real Yahoo payload committed as a regression fixture
+
+## Session 4 — autonomous R&D core
+- [x] Rolling buffer with a hard 5,000-candle cap + tests
+- [x] Mandatory validation gate (policy, outcome, durable record, DB v4)
+- [x] Research pipeline (profile → generate → backtest → validate), bounded queue + leaderboard
+- [x] Local model hub (download, verify, manage) + UI
+- [x] Device swarm (real LAN sync, 15-device cap, loopback-tested) + UI
+- [x] Three new screens wired into the sidebar; validation status in Strategy Lab
+- [x] 110 tests passing; analyzer clean; 0 placeholder hits
+- [x] SCOPE.md written: what is real, and what was deliberately not built

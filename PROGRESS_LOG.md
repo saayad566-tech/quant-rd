@@ -133,3 +133,37 @@ proactive status reporting, and verify with strict type-safety + tests.
   Binance path could not be exercised live here. It is covered by a unit test
   built on the documented payload shape, and Yahoo also serves crypto
   (`BTC-USD`), so crypto fetching still works without Binance.
+
+## 2026-10-15 — Session 4 (autonomous R&D core, validation gate, swarm)
+
+**Directive received** (uploaded brief): wire the house end-to-end, build a
+multi-device swarm, a local model hub, sequential multi-AI R&D, offline voice,
+a mandatory backtesting gate, rolling buffer caps, and "death to mocks".
+
+**Built and verified**
+- **Rolling buffer caps** — `RollingBuffer` / `RollingCandleBuffer` with a hard
+  5,000-bar cap; a 100,000-item feed holds exactly 5,000.
+- **Mandatory validation gate** — `ValidationPolicy`, `ValidationOutcome`,
+  `StrategyValidation`; strategies persist their validation record (DB v4) and
+  cannot be enabled on an assertion — the UI prompts to run the gate first.
+- **Research pipeline** — Data Analyst → Strategy Builder → Backtester →
+  Validator, with a bounded work queue (batch yields) and a bounded leaderboard
+  (only the top K retained, equity curves released immediately).
+- **Local model hub** — manifest fetch, streamed download with progress,
+  SHA-256 verification, on-device index, list and remove.
+- **Device swarm** — a real LAN sync layer: HTTP node advertising datasets,
+  client probe/list/pull, peer registry hard-capped at 15. Verified by a real
+  loopback server/client test.
+- **UI** — three new screens (Research, Local Models, Device Swarm) wired into
+  the sidebar; validation status surfaced in the Strategy Lab.
+
+**Deliberately not built** (documented in `SCOPE.md`, because the brief forbids
+fake claims): on-device LLM inference, LLM-driven agents, cross-device compute
+pooling/scheduling, and offline Whisper STT — each needs a native runtime or
+real multi-device hardware that this build does not have.
+
+**Verified**
+- `flutter analyze` → **No issues found!**
+- `flutter test` → **All tests passed! (110)**, up from 83. New suites: rolling
+  buffer, research pipeline, validation gate, and the LAN swarm loopback.
+- Placeholder scan across `lib/` + `test/`: **0 hits**.
