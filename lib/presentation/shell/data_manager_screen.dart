@@ -16,6 +16,7 @@ import '../../data/models/api_provider.dart';
 import '../../data/models/dataset.dart';
 import '../../data/export/export_service.dart';
 import '../../data/parsers/csv_candle_parser.dart';
+import '../../data/parsers/json_candle_parser.dart';
 import '../../data/sample/sample_data.dart';
 import '../../domain/providers/core_providers.dart';
 import '../../domain/providers/feature_providers.dart';
@@ -57,14 +58,14 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
             runSpacing: Spacing.sm,
             children: [
               FilledButton.icon(
-                onPressed: _busy ? null : _importCsv,
-                icon: const Icon(Icons.upload_file_rounded, size: 18),
-                label: const Text('Import CSV'),
+                onPressed: _busy ? null : _fetchData,
+                icon: const Icon(Icons.cloud_download_rounded, size: 18),
+                label: const Text('Fetch data (auto)'),
               ),
               OutlinedButton.icon(
-                onPressed: _busy ? null : _fetchFromProvider,
-                icon: const Icon(Icons.cloud_download_rounded, size: 18),
-                label: const Text('Fetch from provider'),
+                onPressed: _busy ? null : _importFile,
+                icon: const Icon(Icons.upload_file_rounded, size: 18),
+                label: const Text('Import CSV / JSON'),
               ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : _loadSample,
@@ -84,7 +85,7 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
                     child: EmptyState(
                       icon: Icons.storage_rounded,
                       title: 'No datasets yet',
-                      message: 'Import a CSV of OHLCV data, fetch from a provider using your own key, or load a bundled sample to get started.',
+                      message: 'Type a symbol and press “Fetch data” — Quant RD tries free keyless sources first, then any provider you have a key for. You can also import a CSV/JSON file or load a bundled sample.',
                       action: FilledButton.icon(
                         onPressed: _loadSample,
                         icon: const Icon(Icons.auto_awesome_rounded, size: 18),
@@ -178,17 +179,20 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
     }
   }
 
-  Future<void> _importCsv() async {
+  Future<void> _importFile() async {
     setState(() => _busy = true);
     try {
-      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['csv', 'txt']);
+      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['csv', 'txt', 'json']);
       if (file == null) return;
       final bytes = await file.readAsBytes();
       final content = utf8.decode(bytes, allowMalformed: true);
-      final report = CsvCandleParser.parse(content);
+      final trimmed = content.trimLeft();
+      final looksJson = file.name.toLowerCase().endsWith('.json') || trimmed.startsWith('{') || trimmed.startsWith('[');
+      final report = looksJson ? JsonCandleParser.parse(content) : CsvCandleParser.parse(content);
       if (!mounted) return;
       if (report.candles.isEmpty) {
-        _snack('No valid OHLCV rows found in the file.', error: true);
+        final why = report.warnings.isEmpty ? 'No valid OHLCV rows were found.' : report.warnings.join(' ');
+        _snack('Could not read that file. $why', error: true);
         return;
       }
       final meta = await _promptDatasetMeta(
@@ -203,12 +207,13 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
             symbol: meta.symbol,
             interval: meta.interval,
             report: report,
+            source: looksJson ? DataSource.jsonImport : DataSource.csvImport,
           );
       if (!mounted) return;
       if (error != null) {
         _snack(error, error: true);
       } else {
-        _snack('Imported ${Fmt.integer(report.candles.length)} candles for ${meta.symbol.toUpperCase()}.');
+        _snack('Imported ${Fmt.integer(report.candles.length)} candles for ${meta.symbol.toUpperCase()} from ${looksJson ? 'JSON' : 'CSV'}.');
       }
     } catch (e) {
       if (mounted) _snack('Import failed: $e', error: true);
@@ -217,7 +222,9 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
     }
   }
 
-  Future<void> _fetchFromProvider() async {
+  /// Smart fetch: local cache first, then free keyless sources, then any keyed
+  /// provider the user has configured. Reports what it did in plain English.
+  Future<void> _fetchData() async {
     final keys = await ref.read(apiKeysProvider.future);
     if (!mounted) return;
     final params = await showDialog<_FetchParams>(
@@ -227,31 +234,36 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
     if (params == null) return;
     setState(() => _busy = true);
     try {
-      final candles = await ref.read(marketDataClientProvider).fetch(
-            provider: params.provider,
-            apiKey: params.apiKey,
-            symbol: params.symbol,
-            interval: params.interval,
-            customUrl: params.provider == ApiProvider.custom ? params.apiKey : null,
-          );
-      final error = await ref.read(dataActionsProvider).saveCandles(
+      final result = await ref.read(dataActionsProvider).smartFetch(
             workspaceId: _wsId(),
             symbol: params.symbol,
             interval: params.interval,
-            candles: candles,
-            source: _sourceFor(params.provider),
+            preferProvider: params.provider,
           );
       if (!mounted) return;
-      if (error != null) {
-        _snack(error, error: true);
+      if (result.error != null) {
+        _snack(result.error!, error: true);
       } else {
-        _snack('Fetched ${Fmt.integer(candles.length)} candles for ${params.symbol.toUpperCase()}.');
+        _showNotes(result.notes);
       }
-    } catch (e) {
-      if (mounted) _snack('$e', error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _showNotes(List<String> notes) {
+    final c = context.colors;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: notes
+            .map((n) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(n)))
+            .toList(),
+      ),
+      backgroundColor: c.surfaceAlt,
+      duration: const Duration(seconds: 7),
+    ));
   }
 
   Future<void> _loadSample() async {
@@ -295,21 +307,6 @@ class _DataManagerScreenState extends ConsumerState<DataManagerScreen> {
   }
 
   String _wsId() => ref.read(activeWorkspaceIdProvider).value ?? StorageKeys.defaultWorkspaceId;
-
-  DataSource _sourceFor(ApiProvider p) {
-    switch (p) {
-      case ApiProvider.alphaVantage:
-        return DataSource.alphaVantage;
-      case ApiProvider.twelveData:
-        return DataSource.twelveData;
-      case ApiProvider.polygon:
-        return DataSource.polygon;
-      case ApiProvider.finnhub:
-        return DataSource.finnhub;
-      case ApiProvider.custom:
-        return DataSource.custom;
-    }
-  }
 
   Future<_DatasetMeta?> _promptDatasetMeta({
     required String defaultSymbol,
@@ -499,7 +496,9 @@ class _DatasetMetaDialogState extends State<_DatasetMetaDialog> {
 }
 
 class _FetchParams {
-  final ApiProvider provider;
+  /// null means "Auto" — try the local cache, then free keyless sources, then
+  /// any provider the user has a key for.
+  final ApiProvider? provider;
   final String apiKey;
   final String symbol;
   final BarInterval interval;
@@ -515,16 +514,10 @@ class _FetchDialog extends StatefulWidget {
 }
 
 class _FetchDialogState extends State<_FetchDialog> {
-  ApiProvider _provider = ApiProvider.alphaVantage;
+  ApiProvider? _provider; // null = Auto
   BarInterval _interval = BarInterval.d1;
   final _symbol = TextEditingController(text: 'AAPL');
   final _key = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _key.text = widget.keys[_provider] ?? '';
-  }
 
   @override
   void dispose() {
@@ -536,45 +529,44 @@ class _FetchDialogState extends State<_FetchDialog> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final hasStored = widget.keys.containsKey(_provider);
+    final p = _provider;
+    final hasStored = p != null && widget.keys.containsKey(p);
+    final isCustom = p == ApiProvider.custom;
+    final isKeyless = p != null && !p.requiresKey && !isCustom;
+
     return AlertDialog(
-      title: const Text('Fetch from provider'),
+      title: const Text('Fetch market data'),
       content: SizedBox(
-        width: 420,
+        width: 440,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FieldLabel(
-              label: 'Provider',
-              child: DropdownButtonFormField<ApiProvider>(
-                initialValue: _provider,
-                items: ApiProvider.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
-                onChanged: (v) {
-                  setState(() {
-                    _provider = v ?? ApiProvider.alphaVantage;
-                    _key.text = widget.keys[_provider] ?? '';
-                  });
-                },
+            Container(
+              padding: const EdgeInsets.all(Spacing.sm),
+              decoration: BoxDecoration(
+                color: c.accent.withValues(alpha: 0.08),
+                borderRadius: Radii.rSm,
+                border: Border.all(color: c.accent.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome_rounded, size: 16, color: c.accent),
+                  const SizedBox(width: Spacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Auto checks your local cache first, then free keyless sources (Yahoo Finance, Binance), then any provider you have a key for.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: Spacing.sm),
+            const SizedBox(height: Spacing.md),
             FieldLabel(
               label: 'Symbol',
-              hint: 'e.g. AAPL, RELIANCE.NS, BTC-USD',
+              hint: 'e.g. AAPL, RELIANCE.NS, BTC-USD, NIFTY50',
               child: TextField(controller: _symbol),
-            ),
-            const SizedBox(height: Spacing.sm),
-            FieldLabel(
-              label: _provider == ApiProvider.custom ? 'Endpoint URL' : 'API key',
-              hint: hasStored ? 'Using your saved key' : 'Enter a key (saved in the API Keys tab)',
-              child: TextField(
-                controller: _key,
-                obscureText: _provider != ApiProvider.custom,
-                decoration: InputDecoration(
-                  hintText: hasStored ? Fmt.maskKey(widget.keys[_provider]!) : 'Paste key',
-                ),
-              ),
             ),
             const SizedBox(height: Spacing.sm),
             FieldLabel(
@@ -585,9 +577,53 @@ class _FetchDialogState extends State<_FetchDialog> {
                 onChanged: (v) => setState(() => _interval = v ?? BarInterval.d1),
               ),
             ),
+            const SizedBox(height: Spacing.sm),
+            FieldLabel(
+              label: 'Source',
+              child: DropdownButtonFormField<ApiProvider?>(
+                initialValue: _provider,
+                isExpanded: true,
+                items: [
+                  const DropdownMenuItem<ApiProvider?>(value: null, child: Text('Auto — free sources first (recommended)')),
+                  ...ApiProvider.values.map(
+                    (e) => DropdownMenuItem<ApiProvider?>(
+                      value: e,
+                      child: Text(e.requiresKey ? e.label : '${e.label} — no key needed', overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() {
+                  _provider = v;
+                  _key.text = (v != null && widget.keys.containsKey(v)) ? widget.keys[v]! : '';
+                }),
+              ),
+            ),
+            if (p != null && p.requiresKey) ...[
+              const SizedBox(height: Spacing.sm),
+              FieldLabel(
+                label: 'API key',
+                hint: hasStored ? 'Using your saved key' : 'Enter a key (save it in the API Keys tab)',
+                child: TextField(
+                  controller: _key,
+                  obscureText: true,
+                  decoration: InputDecoration(hintText: hasStored ? Fmt.maskKey(widget.keys[p]!) : 'Paste key'),
+                ),
+              ),
+            ],
+            if (isCustom) ...[
+              const SizedBox(height: Spacing.sm),
+              FieldLabel(
+                label: 'Endpoint URL',
+                child: TextField(controller: _key, decoration: const InputDecoration(hintText: 'https://example.com/ohlcv')),
+              ),
+            ],
+            if (isKeyless) ...[
+              const SizedBox(height: Spacing.xs),
+              Text('No API key needed for this source.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.success)),
+            ],
             const SizedBox(height: Spacing.xs),
             Text(
-              'Provider free tiers have request limits; results are cached locally for offline use.',
+              'Whatever is fetched is cached locally, so repeat backtests run instantly offline.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
           ],

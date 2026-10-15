@@ -242,7 +242,7 @@ class _ApiKeysPanel extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Spacing.xs),
           child: Text(
-            'Keys are stored only in this device\u2019s secure store and are never uploaded.',
+            'Yahoo Finance and Binance need no key. Add keys below only for extra providers. Keys stay in this device\u2019s secure store and are never uploaded.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -251,12 +251,52 @@ class _ApiKeysPanel extends ConsumerWidget {
           loading: () => const Padding(padding: EdgeInsets.all(Spacing.md), child: LoadingView()),
           error: (e, _) => ErrorView(message: 'Could not read stored keys: $e', onRetry: () => ref.invalidate(apiKeysProvider)),
           data: (map) => Column(
-            children: ApiProvider.values
-                .map((p) => _ApiKeyRow(provider: p, savedKey: map[p]))
-                .toList(),
+            children: [
+              const _FreeSourcesCard(),
+              ...ApiProvider.keyed.map((p) => _ApiKeyRow(provider: p, savedKey: map[p])),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Explains the keyless free sources so users know they can start immediately.
+class _FreeSourcesCard extends StatelessWidget {
+  const _FreeSourcesCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
+      padding: const EdgeInsets.all(Spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, size: 16, color: c.success),
+              const SizedBox(width: Spacing.xs),
+              Expanded(child: Text('Free — no key needed', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14))),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text('Used automatically when you fetch a symbol.', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: Spacing.xs),
+          ...ApiProvider.keyless.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 14, color: c.success),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text('${p.label} — ${p.blurb}', style: Theme.of(context).textTheme.bodySmall)),
+                  ],
+                ),
+              )),
+        ],
+      ),
     );
   }
 }

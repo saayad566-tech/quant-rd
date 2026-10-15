@@ -2,9 +2,14 @@
 /// edit and save custom strategies.
 library;
 
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/export/export_service.dart';
+import '../widgets/export_helper.dart';
 import '../../core/formatters.dart';
 import '../../core/ids.dart';
 import '../../core/constants.dart';
@@ -37,10 +42,21 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
           SectionHeader(
             title: 'Strategy Lab',
             subtitle: 'Start from a built-in strategy or compose your own rule set.',
-            trailing: FilledButton.icon(
-              onPressed: () => _openBuilder(null),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('New strategy'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _importStrategy,
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Install / Import'),
+                ),
+                const SizedBox(width: Spacing.sm),
+                FilledButton.icon(
+                  onPressed: () => _openBuilder(null),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('New strategy'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: Spacing.md),
@@ -77,6 +93,10 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
                                 Row(
                                   children: [
                                     Expanded(child: Text(s.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14))),
+                                    if (!s.enabled) ...[
+                                      Pill(label: 'Disabled', color: c.textMuted),
+                                      const SizedBox(width: Spacing.xxs),
+                                    ],
                                     if (s.isBuiltIn) Pill(label: 'Built-in', color: c.info) else Pill(label: 'Custom', color: c.accentAlt),
                                   ],
                                 ),
@@ -112,6 +132,8 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
                               onEdit: () => _openBuilder(selected),
                               onDelete: () => _delete(selected),
                               onDuplicate: () => _duplicate(selected),
+                              onToggleEnabled: () => _toggleEnabled(selected),
+                              onExport: () => _exportStrategy(selected),
                             ),
                     ),
                   ],
@@ -187,6 +209,167 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
     ref.read(selectedStrategyIdProvider.notifier).clear();
     ref.read(activityLogProvider).warn('Deleted strategy “${s.name}”.');
   }
+
+  Future<void> _toggleEnabled(StrategySpec s) async {
+    final updated = s.copyWith(enabled: !s.enabled, updatedAt: DateTime.now());
+    await ref.read(strategyRepositoryProvider).save(updated);
+    ref.invalidate(strategiesProvider);
+    ref.read(activityLogProvider).info('${updated.enabled ? 'Enabled' : 'Disabled'} strategy “${s.name}”.');
+  }
+
+  Future<void> _exportStrategy(StrategySpec s) async {
+    final json = const JsonEncoder.withIndent('  ').convert(s.toMap());
+    if (!mounted) return;
+    await exportText(
+      context,
+      fileName: 'strategy_${ExportService.safeName(s.name)}.json',
+      content: json,
+      log: ref.read(activityLogProvider),
+    );
+  }
+
+  Future<void> _importStrategy() async {
+    final imported = await showDialog<StrategySpec>(
+      context: context,
+      builder: (ctx) => const _StrategyImportDialog(),
+    );
+    if (imported == null) return;
+    final wsId = ref.read(activeWorkspaceIdProvider).value ?? StorageKeys.defaultWorkspaceId;
+    // A fresh id so importing never overwrites an existing strategy.
+    final fresh = StrategySpec(
+      id: Ids.newId('strat'),
+      workspaceId: wsId,
+      name: imported.name,
+      description: imported.description,
+      entry: imported.entry,
+      exit: imported.exit,
+      stopLossPct: imported.stopLossPct,
+      takeProfitPct: imported.takeProfitPct,
+      sizing: imported.sizing,
+      sizingValue: imported.sizingValue,
+      allowShort: imported.allowShort,
+      enabled: imported.enabled,
+      updatedAt: DateTime.now(),
+    );
+    await ref.read(strategyRepositoryProvider).save(fresh);
+    ref.invalidate(strategiesProvider);
+    ref.read(selectedStrategyIdProvider.notifier).select(fresh.id);
+    ref.read(activityLogProvider).success('Installed strategy “${fresh.name}”.');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Installed “${fresh.name}”.')));
+    }
+  }
+}
+
+/// Paste-or-open-file importer for strategies exported from Quant RD.
+class _StrategyImportDialog extends StatefulWidget {
+  const _StrategyImportDialog();
+
+  @override
+  State<_StrategyImportDialog> createState() => _StrategyImportDialogState();
+}
+
+class _StrategyImportDialogState extends State<_StrategyImportDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['json', 'txt']);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    setState(() {
+      _controller.text = utf8.decode(bytes, allowMalformed: true);
+      _error = null;
+    });
+  }
+
+  void _confirm() {
+    final spec = _parse(_controller.text);
+    if (spec == null) {
+      setState(() => _error = 'That JSON could not be read as a strategy. Export a strategy first to see the expected shape.');
+      return;
+    }
+    Navigator.pop(context, spec);
+  }
+
+  StrategySpec? _parse(String text) {
+    if (text.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is! Map) return null;
+      final m = decoded.cast<String, dynamic>();
+      return StrategySpec.fromMap({
+        'id': m['id'] ?? 'imported',
+        'name': m['name'] ?? 'Imported strategy',
+        'description': m['description'] ?? '',
+        'is_built_in': 0,
+        'entry': m['entry'] ?? const [],
+        'exit': m['exit'] ?? const [],
+        'stop_loss_pct': m['stop_loss_pct'] ?? 0,
+        'take_profit_pct': m['take_profit_pct'] ?? 0,
+        'sizing': m['sizing'] ?? 'percentOfEquity',
+        'sizing_value': m['sizing_value'] ?? 100,
+        'allow_short': m['allow_short'] ?? 0,
+        'enabled': m['enabled'] ?? 1,
+        'updated_at': m['updated_at'] ?? DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return AlertDialog(
+      title: const Text('Install / import a strategy'),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Paste a strategy exported from Quant RD, or open a .json file.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: Spacing.sm),
+            TextField(
+              controller: _controller,
+              maxLines: 10,
+              minLines: 6,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(hintText: '{ "name": "...", "entry": [ ... ], "exit": [ ... ] }'),
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: Spacing.xs),
+              Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 15, color: c.danger),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(_error!, style: TextStyle(color: c.danger, fontSize: 12))),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton.icon(onPressed: _pickFile, icon: const Icon(Icons.folder_open_rounded, size: 18), label: const Text('Open file')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(onPressed: _confirm, child: const Text('Install')),
+      ],
+    );
+  }
 }
 
 class _StrategyDetail extends ConsumerWidget {
@@ -194,12 +377,16 @@ class _StrategyDetail extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onToggleEnabled;
+  final VoidCallback onExport;
 
   const _StrategyDetail({
     required this.strategy,
     required this.onEdit,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onToggleEnabled,
+    required this.onExport,
   });
 
   @override
@@ -234,12 +421,25 @@ class _StrategyDetail extends ConsumerWidget {
                 if (strategy.allowShort) Pill(label: 'Long & short', color: c.warning),
               ],
             ),
-            const SizedBox(height: Spacing.lg),
+            const SizedBox(height: Spacing.sm),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: strategy.enabled,
+              onChanged: (_) => onToggleEnabled(),
+              title: const Text('Active'),
+              subtitle: Text(
+                strategy.enabled ? 'Enabled — available in the backtest picker.' : 'Disabled — kept but excluded from active use.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            const SizedBox(height: Spacing.sm),
             Row(
               children: [
                 FilledButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_rounded, size: 18), label: Text(strategy.isBuiltIn ? 'Customise a copy' : 'Edit')),
                 const SizedBox(width: Spacing.sm),
                 OutlinedButton.icon(onPressed: onDuplicate, icon: const Icon(Icons.copy_rounded, size: 18), label: const Text('Duplicate')),
+                const SizedBox(width: Spacing.sm),
+                OutlinedButton.icon(onPressed: onExport, icon: const Icon(Icons.upload_rounded, size: 18), label: const Text('Export')),
                 const Spacer(),
                 if (!strategy.isBuiltIn)
                   TextButton.icon(

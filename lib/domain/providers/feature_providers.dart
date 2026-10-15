@@ -15,6 +15,7 @@ import '../../data/models/candle.dart';
 import '../../data/models/dataset.dart';
 import '../../data/models/strategy_spec.dart';
 import '../../data/parsers/csv_candle_parser.dart';
+import '../../data/services/smart_data_service.dart';
 import '../engine/backtest_engine.dart';
 import 'core_providers.dart';
 
@@ -220,6 +221,33 @@ class DataActions {
     );
   }
 
+  /// Smart fetch: tries the local cache, then free keyless sources, then any
+  /// keyed provider. Returns the plain-English status notes (or an error).
+  Future<({String? error, List<String> notes})> smartFetch({
+    required String workspaceId,
+    required String symbol,
+    required BarInterval interval,
+    ApiProvider? preferProvider,
+  }) async {
+    try {
+      final res = await ref.read(smartDataServiceProvider).resolve(
+            workspaceId: workspaceId,
+            symbol: symbol,
+            interval: interval,
+            preferProvider: preferProvider,
+          );
+      ref.invalidate(datasetsProvider);
+      for (final n in res.notes) {
+        _log.info(n);
+      }
+      return (error: null, notes: res.notes);
+    } catch (e) {
+      final msg = e.toString();
+      _log.error(msg);
+      return (error: msg, notes: const <String>[]);
+    }
+  }
+
   Future<void> deleteDataset(String id) async {
     await ref.read(datasetRepositoryProvider).delete(id);
     ref.invalidate(datasetsProvider);
@@ -234,3 +262,10 @@ class DataActions {
 }
 
 final dataActionsProvider = Provider<DataActions>((ref) => DataActions(ref));
+
+/// Smart ingestion: cache -> free keyless sources -> keyed providers.
+final smartDataServiceProvider = Provider<SmartDataService>((ref) => SmartDataService(
+      datasets: ref.watch(datasetRepositoryProvider),
+      secrets: ref.watch(secretStoreProvider),
+      client: ref.watch(marketDataClientProvider),
+    ));
