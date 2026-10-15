@@ -9,6 +9,8 @@ library;
 import 'dart:math' as math;
 
 import '../../data/models/candle.dart';
+import '../../data/models/fundamentals.dart';
+import '../fundamentals/fundamental_scorer.dart';
 import '../indicators/indicators.dart';
 import 'book_framework.dart';
 
@@ -76,13 +78,30 @@ class FrameworkScreener {
 
   /// Screens a whole universe. Relative-strength and factor criteria are
   /// genuinely cross-sectional — they are ranks against the peers supplied here.
-  ScreenReport screen(BookFramework framework, Map<String, List<Candle>> universe) {
+  ///
+  /// When [fundamentals] is supplied, criteria that need reported figures are
+  /// evaluated from the filings instead of being reported as unavailable. Without
+  /// it they stay `needsData` — they never pass by default.
+  ScreenReport screen(
+    BookFramework framework,
+    Map<String, List<Candle>> universe, {
+    Map<String, FundamentalSnapshot>? fundamentals,
+    double? price,
+  }) {
     final techs = <String, Technicals>{};
     for (final entry in universe.entries) {
       final t = _computeTechnicals(entry.value);
       if (t != null) techs[entry.key] = t;
     }
     if (techs.isEmpty) return ScreenReport(framework: framework, hits: const [], universeSize: 0);
+
+    final scores = <String, FundamentalScore>{};
+    if (fundamentals != null) {
+      for (final e in fundamentals.entries) {
+        final p = price ?? (techs[e.key]?.price);
+        scores[e.key] = FundamentalScorer.score(e.value, price: p);
+      }
+    }
 
     final rsRanks = _percentileRanks({for (final e in techs.entries) e.key: _returnPct(e.value, 252)});
     final volRanks = _percentileRanks({for (final e in techs.entries) e.key: e.value.volatilityPct});
@@ -96,7 +115,16 @@ class FrameworkScreener {
       final t = entry.value;
       final results = <CriterionResult>[];
       for (final c in framework.criteria) {
-        results.add(_evaluate(c, t, rsRanks[symbol] ?? 0, volRanks[symbol] ?? 50, ddRanks[symbol] ?? 50, upRanks[symbol] ?? 50, momRanks[symbol] ?? 50));
+        results.add(_evaluate(
+          c,
+          t,
+          rsRanks[symbol] ?? 0,
+          volRanks[symbol] ?? 50,
+          ddRanks[symbol] ?? 50,
+          upRanks[symbol] ?? 50,
+          momRanks[symbol] ?? 50,
+          scores[symbol],
+        ));
       }
       hits.add(ScreenHit(
         symbol: symbol,
@@ -118,8 +146,11 @@ class FrameworkScreener {
     double ddRank,
     double upRank,
     double momRank,
+    FundamentalScore? score,
   ) {
     if (!c.computableFromCandles) {
+      // With a filing snapshot in hand these criteria are genuinely evaluated.
+      if (score != null) return score.evaluate(c);
       return CriterionResult(
         criterion: c,
         state: CriterionState.needsData,

@@ -12,6 +12,7 @@ enum NavDestination {
   research('Research'),
   knowledge('Book Intelligence'),
   quantEngine('Quant Engine'),
+  options('Options & Gamma'),
   models('Local Models'),
   swarm('Device Swarm'),
   activityLog('Activity Log');

@@ -4,13 +4,40 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/candle.dart';
+import '../../data/models/fundamentals.dart';
 import '../../data/remote/book_library.dart';
 import '../../data/remote/book_library_factory.dart';
+import '../../data/remote/edgar_client.dart';
+import '../../data/remote/edgar_client_factory.dart';
 import '../knowledge/book_catalogue.dart';
 import '../knowledge/book_framework.dart';
 import '../knowledge/framework_screener.dart';
 import '../knowledge/market_region.dart';
 import 'core_providers.dart';
+
+/// SEC EDGAR. Keyless, but the SEC requires a descriptive User-Agent, which is
+/// configured in Configs.
+final edgarClientProvider = Provider<EdgarClient>((ref) => createEdgarClient());
+
+/// Snapshots fetched this session, so a re-screen does not refetch.
+final _fundamentalCache = <String, FundamentalSnapshot>{};
+
+/// Fetches and caches a filing snapshot. Returns null when the feed is
+/// unavailable — the caller shows a status rather than substituting numbers.
+Future<FundamentalSnapshot?> fetchFundamentals(Ref ref, String ticker, {required String userAgent}) async {
+  final key = ticker.toUpperCase();
+  final cached = _fundamentalCache[key];
+  if (cached != null) return cached;
+  final client = ref.read(edgarClientProvider);
+  if (!client.supported) return null;
+  try {
+    final snapshot = await client.fetchFundamentals(key, userAgent: userAgent);
+    _fundamentalCache[key] = snapshot;
+    return snapshot;
+  } on DataFeedUnavailable {
+    return null;
+  }
+}
 
 /// The active market region. Every listing in the app is filtered through it.
 final marketRegionProvider = Provider<MarketRegion>((ref) {
@@ -119,14 +146,35 @@ class ScreenState {
   final ScreenReport? report;
   final String? error;
 
-  const ScreenState({this.running = false, this.frameworkId, this.report, this.error});
+  /// How many symbols had a filing snapshot, and the data gaps reported.
+  final int fundamentalsLoaded;
+  final List<String> dataGaps;
 
-  ScreenState copyWith({bool? running, String? frameworkId, ScreenReport? report, String? error, bool clearError = false}) =>
+  const ScreenState({
+    this.running = false,
+    this.frameworkId,
+    this.report,
+    this.error,
+    this.fundamentalsLoaded = 0,
+    this.dataGaps = const [],
+  });
+
+  ScreenState copyWith({
+    bool? running,
+    String? frameworkId,
+    ScreenReport? report,
+    String? error,
+    bool clearError = false,
+    int? fundamentalsLoaded,
+    List<String>? dataGaps,
+  }) =>
       ScreenState(
         running: running ?? this.running,
         frameworkId: frameworkId ?? this.frameworkId,
         report: report ?? this.report,
         error: clearError ? null : (error ?? this.error),
+        fundamentalsLoaded: fundamentalsLoaded ?? this.fundamentalsLoaded,
+        dataGaps: dataGaps ?? this.dataGaps,
       );
 }
 
@@ -136,7 +184,7 @@ class ScreenerController extends Notifier<ScreenState> {
 
   /// Screens the active workspace's datasets — already filtered to the active
   /// market region, so a US ticker can never appear in an Indian run.
-  Future<void> run(String frameworkId, {int maxSymbols = 25}) async {
+  Future<void> run(String frameworkId, {int maxSymbols = 25, bool withFundamentals = false}) async {
     final framework = frameworkById(frameworkId);
     if (framework == null) {
       state = state.copyWith(error: 'Unknown framework.');
@@ -164,10 +212,37 @@ class ScreenerController extends Notifier<ScreenState> {
         state = ScreenState(frameworkId: frameworkId, error: 'Every dataset is shorter than 210 bars; the framework needs at least that much history.');
         return;
       }
-      final report = const FrameworkScreener().screen(framework, universe);
-      state = ScreenState(frameworkId: frameworkId, report: report);
+      // Optionally pull filing snapshots so the fundamental criteria become
+      // evaluated rather than passive. A missing filing is logged, never faked.
+      final fundamentals = <String, FundamentalSnapshot>{};
+      final gaps = <String>[];
+      if (withFundamentals) {
+        final ua = ref.read(settingsProvider).value?.edgarUserAgent ?? '';
+        for (final symbol in universe.keys) {
+          final snapshot = await fetchFundamentals(ref, symbol, userAgent: ua);
+          if (snapshot == null) {
+            gaps.add('$symbol: no SEC filing snapshot available.');
+            continue;
+          }
+          fundamentals[symbol] = snapshot;
+          if (snapshot.gaps.isNotEmpty) gaps.add('$symbol: ${snapshot.gaps.first}');
+        }
+      }
+
+      final report = const FrameworkScreener().screen(
+        framework,
+        universe,
+        fundamentals: fundamentals.isEmpty ? null : fundamentals,
+      );
+      state = ScreenState(
+        frameworkId: frameworkId,
+        report: report,
+        fundamentalsLoaded: fundamentals.length,
+        dataGaps: gaps,
+      );
       ref.read(activityLogProvider).info(
-            'Screened ${report.universeSize} ${region.label} symbols against "${framework.name}" — ${report.passing.length} passed.',
+            'Screened ${report.universeSize} ${region.label} symbols against "${framework.name}" — ${report.passing.length} passed'
+            '${fundamentals.isNotEmpty ? ', ${fundamentals.length} with filing data' : ''}.',
           );
     } catch (e) {
       state = ScreenState(frameworkId: frameworkId, error: 'Screen failed — $e');
@@ -176,3 +251,14 @@ class ScreenerController extends Notifier<ScreenState> {
 }
 
 final screenerControllerProvider = NotifierProvider<ScreenerController, ScreenState>(ScreenerController.new);
+
+/// Whether a screen should pull SEC EDGAR filing snapshots so the fundamental
+/// criteria are evaluated rather than reported as unavailable.
+class UseFundamentals extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final useFundamentalsProvider = NotifierProvider<UseFundamentals, bool>(UseFundamentals.new);
