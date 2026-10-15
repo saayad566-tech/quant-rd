@@ -57,7 +57,7 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: Spacing.lg),
           _QuickStart(),
           const SizedBox(height: Spacing.lg),
-          SectionHeader(title: 'Recent backtests', subtitle: 'Your latest runs, newest first.'),
+          const SectionHeader(title: 'Recent backtests', subtitle: 'Your latest runs, newest first.'),
           const SizedBox(height: Spacing.sm),
           backtests.when(
             loading: () => const Padding(padding: EdgeInsets.all(Spacing.lg), child: LoadingView()),

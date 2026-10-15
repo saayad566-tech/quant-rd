@@ -1,6 +1,8 @@
 /// Activity Log screen: a plain-English history of everything the app did.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +36,7 @@ class ActivityLogScreen extends ConsumerWidget {
                 OutlinedButton.icon(
                   onPressed: () {
                     final log = ref.read(activityLogProvider);
-                    exportText(context, fileName: 'quant-rd-activity-log.txt', content: log.exportText(), log: log);
+                    unawaited(exportText(context, fileName: 'quant-rd-activity-log.txt', content: log.exportText(), log: log));
                   },
                   icon: const Icon(Icons.download_rounded, size: 18),
                   label: const Text('Export'),
@@ -55,8 +57,8 @@ class ActivityLogScreen extends ConsumerWidget {
               error: (e, _) => ErrorView(message: 'Could not read the log: $e'),
               data: (list) {
                 if (list.isEmpty) {
-                  return GlassCard(
-                    child: const EmptyState(
+                  return const GlassCard(
+                    child: EmptyState(
                       icon: Icons.receipt_long_rounded,
                       title: 'Nothing logged yet',
                       message: 'Import data, fetch from a provider or run a backtest and it will appear here.',

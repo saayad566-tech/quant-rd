@@ -342,7 +342,7 @@ class _DatasetPreview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     if (datasetId == null) {
-      return GlassCard(
+      return const GlassCard(
         child: SizedBox(
           height: 260,
           child: EmptyState(

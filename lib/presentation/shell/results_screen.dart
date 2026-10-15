@@ -40,7 +40,7 @@ class ResultsScreen extends ConsumerWidget {
               error: (e, _) => ErrorView(message: 'Could not load results: $e', onRetry: () => ref.invalidate(backtestsProvider)),
               data: (list) {
                 if (list.isEmpty) {
-                  return GlassCard(
+                  return const GlassCard(
                     child: EmptyState(
                       icon: Icons.insights_rounded,
                       title: 'No results yet',

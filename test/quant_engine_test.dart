@@ -151,7 +151,7 @@ void main() {
     test('bollinger bands bracket the middle line', () {
       final candles = line(60, 100, 0.5);
       final b = QuantMechanics.bollinger(candles, period: 20, multiple: 2);
-      final i = 40;
+      const i = 40;
       expect(b.upper[i]!, greaterThan(b.middle[i]!));
       expect(b.lower[i]!, lessThan(b.middle[i]!));
     });
@@ -159,7 +159,7 @@ void main() {
     test('an atr channel is symmetric about the middle', () {
       final candles = line(60, 100, 0.5);
       final c = QuantMechanics.atrChannel(candles, period: 20, multiple: 2);
-      final i = 40;
+      const i = 40;
       expect(c.upper[i]! - c.middle[i]!, closeTo(c.middle[i]! - c.lower[i]!, 1e-9));
     });
   });

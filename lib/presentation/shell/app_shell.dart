@@ -45,9 +45,9 @@ class AppShell extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (wide)
-                SizedBox(
+                const SizedBox(
                   width: _sidebarWidth,
-                  child: const Sidebar(),
+                  child: Sidebar(),
                 ),
               if (wide) const _VerticalDivider(),
               Expanded(child: content),

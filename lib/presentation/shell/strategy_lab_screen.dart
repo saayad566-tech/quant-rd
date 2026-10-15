@@ -124,7 +124,7 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
                     Expanded(
                       flex: 3,
                       child: selected == null
-                          ? GlassCard(
+                          ? const GlassCard(
                               child: SizedBox(
                                 height: 320,
                                 child: EmptyState(
@@ -369,8 +369,8 @@ class _StrategyImportDialogState extends State<_StrategyImportDialog> {
         'name': m['name'] ?? 'Imported strategy',
         'description': m['description'] ?? '',
         'is_built_in': 0,
-        'entry': m['entry'] ?? const [],
-        'exit': m['exit'] ?? const [],
+        'entry': m['entry'] ?? const <dynamic>[],
+        'exit': m['exit'] ?? const <dynamic>[],
         'stop_loss_pct': m['stop_loss_pct'] ?? 0,
         'take_profit_pct': m['take_profit_pct'] ?? 0,
         'sizing': m['sizing'] ?? 'percentOfEquity',

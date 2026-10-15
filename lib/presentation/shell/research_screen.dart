@@ -2,6 +2,8 @@
 /// inspect a leaderboard built from real, engine-computed metrics.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,7 +76,7 @@ class _ResearchScreenState extends ConsumerState<ResearchScreen> {
                             ? null
                             : () {
                                 final d = list.firstWhere((x) => x.id == selected, orElse: () => list.first);
-                                ref.read(researchControllerProvider.notifier).run(datasetId: d.id, symbol: d.symbol);
+                                unawaited(ref.read(researchControllerProvider.notifier).run(datasetId: d.id, symbol: d.symbol));
                               },
                         icon: const Icon(Icons.play_arrow_rounded, size: 18),
                         label: Text(state.running ? 'Running…' : 'Run research'),

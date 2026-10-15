@@ -70,7 +70,7 @@ void main() {
     test('upper/lower sit multiplier standard deviations from the mean', () {
       final (upper, middle, lower) = Indicators.bollinger([1, 2, 3, 4, 5], 3, 2);
       expect(middle[2], closeTo(2, 1e-9));
-      final sd = 0.816496580927726;
+      const sd = 0.816496580927726;
       expect(upper[2], closeTo(2 + 2 * sd, 1e-6));
       expect(lower[2], closeTo(2 - 2 * sd, 1e-6));
     });

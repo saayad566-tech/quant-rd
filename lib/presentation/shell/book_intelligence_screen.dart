@@ -5,6 +5,8 @@ library;
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -539,7 +541,7 @@ class _LibraryTabState extends ConsumerState<_LibraryTab> {
               const SectionHeader(title: 'Add my own copy', subtitle: 'For a book you own — stored locally, never uploaded'),
               const SizedBox(height: Spacing.sm),
               _OwnCopyForm(onAdd: (title, author, text) {
-                ref.read(bookLibraryControllerProvider.notifier).addOwnCopy(title: title, author: author, text: text);
+                unawaited(ref.read(bookLibraryControllerProvider.notifier).addOwnCopy(title: title, author: author, text: text));
               }),
             ],
           ),

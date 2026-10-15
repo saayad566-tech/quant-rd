@@ -40,17 +40,17 @@ class _QuantEngineScreenState extends ConsumerState<QuantEngineScreen> with Sing
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.sm),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.sm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionHeader(
+              SectionHeader(
                 title: 'Quant Engine',
                 subtitle: 'Deterministic mechanics and a plugin strategy engine, computed from your data.',
               ),
-              const SizedBox(height: Spacing.sm),
-              const ComplianceBanner(compact: true),
+              SizedBox(height: Spacing.sm),
+              ComplianceBanner(compact: true),
             ],
           ),
         ),

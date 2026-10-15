@@ -5,6 +5,8 @@
 /// strategies, then starts the app.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,7 +37,7 @@ Future<void> main() async {
     final activityLog = ActivityLog(
       onChanged: (json) {
         // Fire-and-forget persistence; a failure here must never crash the app.
-        database.setSetting('activity_log', json).catchError((_) {});
+        unawaited(database.setSetting('activity_log', json).catchError((_) {}));
       },
     );
     activityLog.loadFrom(await database.getSetting('activity_log'));

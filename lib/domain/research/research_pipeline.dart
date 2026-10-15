@@ -230,8 +230,8 @@ class ResearchPipeline {
         frameworkId: 'wilder-rsi-atr',
         name: 'RSI mean-reversion ${lo.toInt()}/${hi.toInt()}',
         description: 'Generated: buy while RSI is below $lo, exit when RSI rises above $hi.',
-        entry: [Condition(left: Operand.series(const SeriesRef(IndicatorType.rsi, period: 14)), op: ComparisonOp.lessThan, right: Operand.constant(lo))],
-        exit: [Condition(left: Operand.series(const SeriesRef(IndicatorType.rsi, period: 14)), op: ComparisonOp.greaterThan, right: Operand.constant(hi))],
+        entry: [Condition(left: const Operand.series(SeriesRef(IndicatorType.rsi, period: 14)), op: ComparisonOp.lessThan, right: Operand.constant(lo))],
+        exit: [Condition(left: const Operand.series(SeriesRef(IndicatorType.rsi, period: 14)), op: ComparisonOp.greaterThan, right: Operand.constant(hi))],
         sizing: PositionSizing.allIn,
         updatedAt: stamp,
       );
@@ -242,17 +242,17 @@ class ResearchPipeline {
         name: 'MACD trend',
         description: 'Generated: enter on a bullish MACD cross, exit on a bearish one.',
         entry: [
-          Condition(
-            left: Operand.series(const SeriesRef(IndicatorType.macdLine, period: 12, period2: 26, period3: 9)),
+          const Condition(
+            left: Operand.series(SeriesRef(IndicatorType.macdLine, period: 12, period2: 26, period3: 9)),
             op: ComparisonOp.crossesAbove,
-            right: Operand.series(const SeriesRef(IndicatorType.macdSignal, period: 12, period2: 26, period3: 9)),
+            right: Operand.series(SeriesRef(IndicatorType.macdSignal, period: 12, period2: 26, period3: 9)),
           ),
         ],
         exit: [
-          Condition(
-            left: Operand.series(const SeriesRef(IndicatorType.macdLine, period: 12, period2: 26, period3: 9)),
+          const Condition(
+            left: Operand.series(SeriesRef(IndicatorType.macdLine, period: 12, period2: 26, period3: 9)),
             op: ComparisonOp.crossesBelow,
-            right: Operand.series(const SeriesRef(IndicatorType.macdSignal, period: 12, period2: 26, period3: 9)),
+            right: Operand.series(SeriesRef(IndicatorType.macdSignal, period: 12, period2: 26, period3: 9)),
           ),
         ],
         sizing: PositionSizing.allIn,
@@ -266,14 +266,14 @@ class ResearchPipeline {
         description: 'Generated: buy a close above the upper band, exit at the middle band.',
         entry: [
           Condition(
-            left: Operand.series(const SeriesRef(IndicatorType.close)),
+            left: const Operand.series(SeriesRef(IndicatorType.close)),
             op: ComparisonOp.crossesAbove,
             right: Operand.series(SeriesRef(IndicatorType.bollUpper, period: 20, multiplier: mult)),
           ),
         ],
         exit: [
           Condition(
-            left: Operand.series(const SeriesRef(IndicatorType.close)),
+            left: const Operand.series(SeriesRef(IndicatorType.close)),
             op: ComparisonOp.crossesBelow,
             right: Operand.series(SeriesRef(IndicatorType.bollMiddle, period: 20, multiplier: mult)),
           ),
