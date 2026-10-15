@@ -19,8 +19,11 @@ import '../../data/models/dataset.dart';
 import '../../data/models/strategy_spec.dart';
 import '../../domain/providers/advanced_providers.dart';
 import '../../domain/providers/core_providers.dart';
+import '../../domain/knowledge/book_catalogue.dart';
+import '../../domain/knowledge/book_framework.dart';
 import '../../domain/providers/feature_providers.dart';
 import '../widgets/common.dart';
+import 'book_intelligence_screen.dart';
 
 class StrategyLabScreen extends ConsumerStatefulWidget {
   const StrategyLabScreen({super.key});
@@ -61,6 +64,8 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
               ],
             ),
           ),
+          const SizedBox(height: Spacing.sm),
+          const ComplianceBanner(),
           const SizedBox(height: Spacing.md),
           Expanded(
             child: strategies.when(
@@ -478,6 +483,10 @@ class _StrategyDetail extends ConsumerWidget {
                 if (strategy.allowShort) Pill(label: 'Long & short', color: c.warning),
               ],
             ),
+            if (frameworkById(strategy.frameworkId ?? '') != null) ...[
+              const SizedBox(height: Spacing.sm),
+              _FrameworkTag(framework: frameworkById(strategy.frameworkId!)!),
+            ],
             const SizedBox(height: Spacing.sm),
             _ValidationGateCard(strategy: strategy, onValidate: onValidate),
             const SizedBox(height: Spacing.sm),
@@ -1129,6 +1138,46 @@ class _DatasetPickerDialog extends StatelessWidget {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
       ],
+    );
+  }
+}
+
+/// Cites the book framework a strategy implements, as the directive requires.
+class _FrameworkTag extends StatelessWidget {
+  final BookFramework framework;
+  const _FrameworkTag({required this.framework});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(Spacing.sm),
+      decoration: BoxDecoration(
+        color: c.accentAlt.withValues(alpha: 0.08),
+        borderRadius: Radii.rSm,
+        border: Border.all(color: c.accentAlt.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.menu_book_rounded, size: 16, color: c.accentAlt),
+          const SizedBox(width: Spacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('[Strategy Framework: ${framework.name}]', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 12.5)),
+                Text(framework.book.citation, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11)),
+                Text(
+                  '${framework.computable.length} criteria computed from price and volume · '
+                  '${framework.needsData.length} need fundamentals (reported as N/A, never faked)',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10.5, color: c.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

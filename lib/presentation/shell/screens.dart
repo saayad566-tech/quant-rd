@@ -3,6 +3,7 @@ library;
 
 export 'activity_log_screen.dart';
 export 'backtest_screen.dart';
+export 'book_intelligence_screen.dart';
 export 'dashboard_screen.dart';
 export 'data_manager_screen.dart';
 export 'models_screen.dart';

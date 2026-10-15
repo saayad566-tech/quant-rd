@@ -12,6 +12,8 @@ import '../../data/models/api_provider.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/models/dataset.dart';
 import '../../data/models/workspace.dart';
+import '../../domain/knowledge/market_region.dart';
+import '../../domain/providers/knowledge_providers.dart';
 import '../../domain/providers/core_providers.dart';
 import '../../domain/providers/feature_providers.dart';
 import '../../domain/providers/ui_providers.dart';
@@ -158,6 +160,7 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.backtest: Icons.play_circle_fill_rounded,
     NavDestination.results: Icons.insights_rounded,
     NavDestination.research: Icons.travel_explore_rounded,
+    NavDestination.knowledge: Icons.menu_book_rounded,
     NavDestination.models: Icons.memory_rounded,
     NavDestination.swarm: Icons.hub_rounded,
     NavDestination.activityLog: Icons.receipt_long_rounded,
@@ -170,6 +173,7 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.backtest: 'Configure & run a test',
     NavDestination.results: 'Analyse performance',
     NavDestination.research: 'Sweep & rank strategies',
+    NavDestination.knowledge: 'Book frameworks & screener',
     NavDestination.models: 'Download & manage models',
     NavDestination.swarm: 'Sync across devices',
     NavDestination.activityLog: 'Plain-English history',
@@ -553,6 +557,26 @@ class _ConfigsPanelState extends ConsumerState<_ConfigsPanel> {
               ),
             ),
             const SizedBox(height: Spacing.xs),
+            Text('MARKET REGION', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: Spacing.xxs),
+            DropdownButtonFormField<MarketRegion>(
+              initialValue: ref.watch(marketRegionProvider),
+              isExpanded: true,
+              items: MarketRegion.values
+                  .map((r) => DropdownMenuItem(value: r, child: Text('${r.label} · ${r.exchanges}')))
+                  .toList(),
+              onChanged: (v) async {
+                if (v == null) return;
+                await ref.read(settingsControllerProvider).update((s) => s.copyWith(marketRegion: v));
+                ref.read(activityLogProvider).info('Market region set to ${v.label} — listings are now filtered to it.');
+              },
+            ),
+            const SizedBox(height: Spacing.xxs),
+            Text(
+              'All listings, screens and charts are filtered to this region. A US ticker cannot appear in the India view.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10.5),
+            ),
+            const SizedBox(height: Spacing.md),
             _text(context, 'Assets base URL', _assetBase),
             const SizedBox(height: Spacing.xs),
             const _AssetPackControls(),
