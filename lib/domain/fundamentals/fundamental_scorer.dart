@@ -250,7 +250,7 @@ class FundamentalScorer {
   static double _ln(double x) {
     if (x <= 0) return double.nan;
     // Natural log via the atanh series, accurate for the range used here.
-    var y = (x - 1) / (x + 1);
+    final y = (x - 1) / (x + 1);
     final y2 = y * y;
     var sum = 0.0;
     var term = y;

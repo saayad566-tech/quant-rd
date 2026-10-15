@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
-import '../../core/ids.dart';
 import '../../core/logging/activity_log.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/models/workspace.dart';
@@ -169,5 +168,3 @@ class SettingsController {
 
 final settingsControllerProvider = Provider<SettingsController>((ref) => SettingsController(ref));
 
-/// The id used when creating new entities in the active workspace.
-final newIdProvider = Provider<String Function(String)>((ref) => Ids.newId);

@@ -156,7 +156,7 @@ class IoSwarmNode implements SwarmNode {
   Future<List<RemoteDatasetInfo>> listRemote(String host, int port) async {
     final m = await _getJson(host, port, '/swarm/datasets');
     return ((m['datasets'] as List?) ?? const [])
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((e) => RemoteDatasetInfo.fromJson(e.cast<String, dynamic>()))
         .toList();
   }
@@ -165,7 +165,7 @@ class IoSwarmNode implements SwarmNode {
   Future<List<Candle>> pullDataset(String host, int port, String datasetId) async {
     final m = await _getJson(host, port, '/swarm/dataset/${Uri.encodeComponent(datasetId)}');
     return ((m['candles'] as List?) ?? const [])
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((e) => Candle.fromMap(e.cast<String, dynamic>()))
         .toList();
   }
