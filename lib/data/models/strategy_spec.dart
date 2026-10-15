@@ -208,6 +208,10 @@ class StrategySpec {
   /// The most recent result of the mandatory backtest validation gate.
   /// Null means the strategy has never been validated.
   final StrategyValidation? validation;
+
+  /// The book framework this strategy implements, if it corresponds to a
+  /// documented one. Null means it cites no specific source.
+  final String? frameworkId;
   final DateTime updatedAt;
 
   const StrategySpec({
@@ -225,6 +229,7 @@ class StrategySpec {
     this.allowShort = false,
     this.enabled = true,
     this.validation,
+    this.frameworkId,
     required this.updatedAt,
   });
 
@@ -242,6 +247,7 @@ class StrategySpec {
     bool? enabled,
     StrategyValidation? validation,
     bool clearValidation = false,
+    String? frameworkId,
     DateTime? updatedAt,
   }) =>
       StrategySpec(
@@ -259,6 +265,7 @@ class StrategySpec {
         allowShort: allowShort ?? this.allowShort,
         enabled: enabled ?? this.enabled,
         validation: clearValidation ? null : (validation ?? this.validation),
+        frameworkId: frameworkId ?? this.frameworkId,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
@@ -288,6 +295,7 @@ class StrategySpec {
         'allow_short': allowShort ? 1 : 0,
         'enabled': enabled ? 1 : 0,
         'validation': validation == null ? null : jsonEncode(validation!.toMap()),
+        'framework_id': frameworkId,
         'updated_at': updatedAt.millisecondsSinceEpoch,
       };
 
@@ -306,6 +314,7 @@ class StrategySpec {
         allowShort: ((m['allow_short'] as num?)?.toInt() ?? 0) == 1,
         enabled: ((m['enabled'] as num?)?.toInt() ?? 1) == 1,
         validation: _parseValidation(m['validation']),
+        frameworkId: m['framework_id'] as String?,
         updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updated_at'] as num?)?.toInt() ?? 0),
       );
 

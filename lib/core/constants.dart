@@ -43,7 +43,7 @@ class AppLimits {
 class StorageKeys {
   const StorageKeys._();
   static const String databaseName = 'quant_rd.db';
-  static const String databaseVersion = '4';
+  static const String databaseVersion = '5';
   static const String settingsBox = 'quant_rd_settings';
 
   /// The workspace created on first run; also the fallback for legacy rows.

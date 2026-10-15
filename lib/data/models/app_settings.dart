@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../domain/knowledge/market_region.dart';
 import 'backtest_config.dart';
 
 class AppSettings {
@@ -21,6 +22,10 @@ class AppSettings {
   /// (expects `<base>/manifest.json`). Empty disables remote models.
   final String modelBaseUrl;
 
+  /// The active market region. Every listing in the app is filtered through it,
+  /// so cross-market leakage cannot occur.
+  final MarketRegion marketRegion;
+
   const AppSettings({
     this.themeMode = ThemeMode.dark,
     this.defaultConfig = const BacktestConfig(),
@@ -28,6 +33,7 @@ class AppSettings {
     this.assetPackBaseUrl = '',
     this.includeSampleData = true,
     this.modelBaseUrl = '',
+    this.marketRegion = MarketRegion.india,
   });
 
   AppSettings copyWith({
@@ -37,6 +43,7 @@ class AppSettings {
     String? assetPackBaseUrl,
     bool? includeSampleData,
     String? modelBaseUrl,
+    MarketRegion? marketRegion,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -45,6 +52,7 @@ class AppSettings {
         assetPackBaseUrl: assetPackBaseUrl ?? this.assetPackBaseUrl,
         includeSampleData: includeSampleData ?? this.includeSampleData,
         modelBaseUrl: modelBaseUrl ?? this.modelBaseUrl,
+        marketRegion: marketRegion ?? this.marketRegion,
       );
 
   Map<String, dynamic> toMap() => {
@@ -54,6 +62,7 @@ class AppSettings {
         'asset_pack_base_url': assetPackBaseUrl,
         'include_sample_data': includeSampleData ? 1 : 0,
         'model_base_url': modelBaseUrl,
+        'market_region': marketRegion.name,
       };
 
   factory AppSettings.fromMap(Map<String, dynamic> m) => AppSettings(
@@ -65,5 +74,6 @@ class AppSettings {
         assetPackBaseUrl: (m['asset_pack_base_url'] as String?) ?? '',
         includeSampleData: ((m['include_sample_data'] as num?)?.toInt() ?? 1) == 1,
         modelBaseUrl: (m['model_base_url'] as String?) ?? '',
+        marketRegion: MarketRegion.fromId(m['market_region'] as String?),
       );
 }
