@@ -15,7 +15,9 @@ import '../../core/ids.dart';
 import '../../core/constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
+import '../../data/models/dataset.dart';
 import '../../data/models/strategy_spec.dart';
+import '../../domain/providers/advanced_providers.dart';
 import '../../domain/providers/core_providers.dart';
 import '../../domain/providers/feature_providers.dart';
 import '../widgets/common.dart';
@@ -134,6 +136,7 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
                               onDuplicate: () => _duplicate(selected),
                               onToggleEnabled: () => _toggleEnabled(selected),
                               onExport: () => _exportStrategy(selected),
+                              onValidate: () => _validate(selected),
                             ),
                     ),
                   ],
@@ -210,7 +213,59 @@ class _StrategyLabScreenState extends ConsumerState<StrategyLabScreen> {
     ref.read(activityLogProvider).warn('Deleted strategy “${s.name}”.');
   }
 
+  /// The mandatory gate: a strategy is not enabled on an assertion, only on a
+  /// passing backtest validation.
+  Future<void> _validate(StrategySpec s) async {
+    final datasets = await ref.read(datasetsProvider.future);
+    if (!mounted) return;
+    if (datasets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a dataset first — validation runs against real bars.')),
+      );
+      return;
+    }
+    final picked = await showDialog<Dataset>(
+      context: context,
+      builder: (ctx) => _DatasetPickerDialog(datasets: datasets),
+    );
+    if (picked == null) return;
+    final outcome = await ref.read(validationControllerProvider.notifier).validate(
+          strategy: s,
+          datasetId: picked.id,
+          symbol: picked.symbol,
+        );
+    if (!mounted) return;
+    final msg = outcome == null
+        ? 'Validation could not run (the dataset may be too short).'
+        : outcome.passed
+            ? 'Validation PASSED on ${picked.symbol}.'
+            : 'Validation FAILED — ${outcome.failures.join('; ')}';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   Future<void> _toggleEnabled(StrategySpec s) async {
+    if (!s.enabled && (s.validation == null || !s.validation!.passed)) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Not validated'),
+          content: Text(
+            '“${s.name}” has not passed the backtest validation gate. Strategies are not enabled on an assertion — '
+            'run the gate against real bars first, or enable it anyway (not recommended).',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx, 'force'), child: const Text('Enable anyway')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'validate'), child: const Text('Validate now')),
+          ],
+        ),
+      );
+      if (choice == 'validate') {
+        await _validate(s);
+        return;
+      }
+      if (choice != 'force') return;
+    }
     final updated = s.copyWith(enabled: !s.enabled, updatedAt: DateTime.now());
     await ref.read(strategyRepositoryProvider).save(updated);
     ref.invalidate(strategiesProvider);
@@ -379,6 +434,7 @@ class _StrategyDetail extends ConsumerWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onToggleEnabled;
   final VoidCallback onExport;
+  final VoidCallback onValidate;
 
   const _StrategyDetail({
     required this.strategy,
@@ -387,6 +443,7 @@ class _StrategyDetail extends ConsumerWidget {
     required this.onDuplicate,
     required this.onToggleEnabled,
     required this.onExport,
+    required this.onValidate,
   });
 
   @override
@@ -422,6 +479,8 @@ class _StrategyDetail extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: Spacing.sm),
+            _ValidationGateCard(strategy: strategy, onValidate: onValidate),
+            const SizedBox(height: Spacing.sm),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: strategy.enabled,
@@ -440,6 +499,8 @@ class _StrategyDetail extends ConsumerWidget {
                 OutlinedButton.icon(onPressed: onDuplicate, icon: const Icon(Icons.copy_rounded, size: 18), label: const Text('Duplicate')),
                 const SizedBox(width: Spacing.sm),
                 OutlinedButton.icon(onPressed: onExport, icon: const Icon(Icons.upload_rounded, size: 18), label: const Text('Export')),
+                const SizedBox(width: Spacing.sm),
+                OutlinedButton.icon(onPressed: onValidate, icon: const Icon(Icons.verified_rounded, size: 18), label: const Text('Validate')),
                 const Spacer(),
                 if (!strategy.isBuiltIn)
                   TextButton.icon(
@@ -970,6 +1031,104 @@ class _ConditionEditor extends StatelessWidget {
           }
         },
       ),
+    );
+  }
+}
+
+/// Shows the state of the mandatory backtest validation gate for a strategy.
+class _ValidationGateCard extends StatelessWidget {
+  final StrategySpec strategy;
+  final VoidCallback onValidate;
+
+  const _ValidationGateCard({required this.strategy, required this.onValidate});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final v = strategy.validation;
+    final passed = v?.passed ?? false;
+    final color = v == null ? c.textMuted : (passed ? c.success : c.danger);
+    final title = v == null ? 'not validated' : (passed ? 'passed' : 'failed');
+    final icon = v == null ? Icons.help_outline_rounded : (passed ? Icons.verified_rounded : Icons.gpp_bad_rounded);
+
+    return Container(
+      padding: const EdgeInsets.all(Spacing.sm),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: Radii.rSm,
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: Spacing.xs),
+              Expanded(
+                child: Text(
+                  'Validation gate — $title',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
+                ),
+              ),
+              TextButton(onPressed: onValidate, child: const Text('Run')),
+            ],
+          ),
+          if (v == null)
+            Text(
+              'No backtest validation recorded. A strategy is never enabled on an assertion alone — run the gate over real bars.',
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else ...[
+            Text(
+              '${v.symbol} · ${v.metrics.tradeCount} trades · return ${v.metrics.totalReturnPct.toStringAsFixed(1)}% · '
+              'max DD ${v.metrics.maxDrawdownPct.toStringAsFixed(1)}% · '
+              'PF ${v.metrics.profitFactor.isFinite ? v.metrics.profitFactor.toStringAsFixed(2) : '\u221e'}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            for (final line in v.checks)
+              Text(
+                line,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: line.startsWith('PASS') ? c.success : c.danger,
+                      fontSize: 11,
+                    ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DatasetPickerDialog extends StatelessWidget {
+  final List<Dataset> datasets;
+
+  const _DatasetPickerDialog({required this.datasets});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Validate against which dataset?'),
+      content: SizedBox(
+        width: 460,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: datasets.length,
+          itemBuilder: (context, i) {
+            final d = datasets[i];
+            return ListTile(
+              title: Text('${d.symbol} · ${d.interval.label}'),
+              subtitle: Text('${d.barCount} bars · ${d.source.label}'),
+              onTap: () => Navigator.pop(context, d),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      ],
     );
   }
 }

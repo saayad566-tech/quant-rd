@@ -9,6 +9,9 @@ enum NavDestination {
   strategies('Strategy Lab'),
   backtest('Backtest'),
   results('Results'),
+  research('Research'),
+  models('Local Models'),
+  swarm('Device Swarm'),
   activityLog('Activity Log');
 
   const NavDestination(this.label);

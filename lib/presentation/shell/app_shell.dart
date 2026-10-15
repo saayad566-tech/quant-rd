@@ -71,6 +71,9 @@ class _ContentArea extends StatelessWidget {
       NavDestination.strategies => const StrategyLabScreen(),
       NavDestination.backtest => const BacktestScreen(),
       NavDestination.results => const ResultsScreen(),
+      NavDestination.research => const ResearchScreen(),
+      NavDestination.models => const ModelsScreen(),
+      NavDestination.swarm => const SwarmScreen(),
       NavDestination.activityLog => const ActivityLogScreen(),
     };
     return AnimatedSwitcher(

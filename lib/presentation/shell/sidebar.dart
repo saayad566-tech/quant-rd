@@ -157,6 +157,9 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.strategies: Icons.science_rounded,
     NavDestination.backtest: Icons.play_circle_fill_rounded,
     NavDestination.results: Icons.insights_rounded,
+    NavDestination.research: Icons.travel_explore_rounded,
+    NavDestination.models: Icons.memory_rounded,
+    NavDestination.swarm: Icons.hub_rounded,
     NavDestination.activityLog: Icons.receipt_long_rounded,
   };
 
@@ -166,6 +169,9 @@ class _NavigatePanel extends ConsumerWidget {
     NavDestination.strategies: 'Build & pick strategies',
     NavDestination.backtest: 'Configure & run a test',
     NavDestination.results: 'Analyse performance',
+    NavDestination.research: 'Sweep & rank strategies',
+    NavDestination.models: 'Download & manage models',
+    NavDestination.swarm: 'Sync across devices',
     NavDestination.activityLog: 'Plain-English history',
   };
 
