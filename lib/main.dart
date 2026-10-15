@@ -14,6 +14,7 @@ import 'core/logging/activity_log.dart';
 import 'data/storage/database_factory.dart';
 import 'data/storage/repositories.dart';
 import 'domain/providers/core_providers.dart';
+import 'domain/strategy_engine/book_strategies.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,10 @@ Future<void> main() async {
   // Install global error handlers first so nothing is ever lost.
   final bootLog = ActivityLog();
   ErrorReporter(bootLog).install();
+
+  // Register the book-derived strategies in the plugin factory. They are
+  // stateless and pure, so this is safe to do before the database opens.
+  registerBookStrategies();
 
   try {
     final database = createAppDatabase();
