@@ -56,3 +56,6 @@ local.properties
 *.apk
 *.aab
 *.exe
+
+# Android Gradle cache
+android/.gradle/
